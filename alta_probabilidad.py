@@ -154,6 +154,11 @@ def rebote(df, coste_bps, financiacion):
             stats(ops[(ops["entrada"] >= a) & (ops["entrada"] <= b + "-12-31")], "  " + nom)
         print()
 
+    falsas = (df["Open"].round(2) == df["Close"].shift(1).round(2)).mean()
+    if falsas > 0.2:
+        print(f"Aviso: en {falsas:.0%} de los días la apertura de este ticker en Yahoo es una copia del")
+        print("cierre anterior (pasa con ^GSPC antes de ~2010). El modo 'apertura' no es fiable aquí:")
+        print("usa --ticker SPY o QQQ para medirlo con aperturas reales.\n")
     # Probabilidad base: entrar cualquier día en tendencia alcista y aguantar lo mismo
     ops = res["cierre"]
     c = df["Close"]

@@ -44,3 +44,14 @@ En vez de adivinar si mañana sube (~54%), mide tres cosas con más probabilidad
 python alta_probabilidad.py               # S&P 500 (US500)
 python alta_probabilidad.py --ticker ^NDX # Nasdaq 100 (US100)
 ```
+
+## Day trading y scalping: `daytrading.py`
+
+```bash
+python daytrading.py                                   # plan de hoy para el US500
+python daytrading.py --indice us100 --cuenta 2000 --riesgo 0.5
+python daytrading.py --backtest                        # qué estrategias intradía tienen ventaja
+```
+
+- **Plan del día**: rango esperado del día (acierta si será un día movido o tranquilo el 74% de las veces), hueco de apertura y probabilidad calibrada de que el precio vuelva al cierre de ayer. También calcula el stop mínimo, el tamaño en Capital.com y el límite de pérdida diaria.
+- **Backtest**: gap fill (30 años), gap fill con stop (velas de 1 hora), momentum intradía y scalping RSI(2). Una estrategia solo se marca como "con ventaja" si gana en las dos mitades del periodo.

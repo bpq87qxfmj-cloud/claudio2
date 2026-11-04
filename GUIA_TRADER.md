@@ -67,3 +67,16 @@ python3 alta_probabilidad.py --ticker ^NDX # US100
 Al final muestra la sección **HOY**:
 - Si hay **señal de rebote**, la regla compraría al cierre y vendería cuando el precio cierre por encima de la media de 5 días.
 - La **probabilidad de que mañana sea un día movido** sirve para ajustar los stops y el tamaño de la posición.
+
+## 6. Day trading / scalping
+
+Antes de la apertura y justo después de las 9:30 (Nueva York):
+```bash
+python3 daytrading.py --cuenta 1000 --riesgo 1
+```
+1. **Rango esperado**: cuántos puntos se moverá hoy. No pongas objetivos mayores que lo que queda de rango.
+2. **Stop**: como mínimo la mitad del rango esperado. Si lo pones más cerca, el ruido normal del día te saca.
+3. **Tamaño**: con ese stop, el programa te dice cuántos contratos abrir para arriesgar solo el % que elegiste.
+4. **Límite diario**: después de 3 operaciones perdedoras, deja de operar ese día.
+
+`python3 daytrading.py --backtest` muestra qué reglas de entrada tienen ventaja real tras el spread. Casi ninguna la tiene.
