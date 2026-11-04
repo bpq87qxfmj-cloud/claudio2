@@ -21,7 +21,7 @@ Todo esto es educativo. No es asesoría financiera. Empieza **siempre en la cuen
 | Paso | Le dices a Claude | Qué pasa |
 |---|---|---|
 | 1 | "copia el top 5 de Berkshire" | `/trader-copycat` lee el informe 13F de la SEC → `trader/targets.json` |
-| 2 | "/trader-capital quote --holdings" o "precios de capital para AAPL AXP GOOGL KO BAC" | precios reales de Capital.com → `trader/prices.json` |
+| 2 | "precios de capital para AAPL AXP GOOGL KO BAC" | precios reales de Capital.com → `trader/prices.json` |
 | 3 | "reparte 1000 dólares" | `/trader-budget` → `trader/orders.json` (sólo propuestas) |
 | 4 | "revisa el riesgo" | `/trader-risk` → PASS o BLOCK por orden |
 | 5 | "muéstrame los tickets de capital" | epic, unidades, exposición y **cuánto te cuesta el spread** |
