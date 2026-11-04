@@ -56,3 +56,14 @@ Con `--csv`, el backtest usa **el spread real de Capital.com** como coste. Antes
 - **CFDs = apalancamiento.** Un 5% en contra con apalancamiento 20:1 te quita el 100% del margen. Usa siempre `--stop-pct`.
 - El spread y la financiación nocturna son tu coste real, aunque no paguen "comisión".
 - Las claves nunca van en el chat, y la cuenta real sólo se activa con `CAPITAL_LIVE=1`, que pones tú.
+
+## 5. Señales de mayor probabilidad
+
+```bash
+python3 alta_probabilidad.py               # US500
+python3 alta_probabilidad.py --ticker ^NDX # US100
+```
+
+Al final muestra la sección **HOY**:
+- Si hay **señal de rebote**, la regla compraría al cierre y vendería cuando el precio cierre por encima de la media de 5 días.
+- La **probabilidad de que mañana sea un día movido** sirve para ajustar los stops y el tamaño de la posición.

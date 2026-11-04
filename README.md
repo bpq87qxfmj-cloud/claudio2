@@ -31,3 +31,16 @@ Muestra los resultados sin costes, con costes y con entradas al azar, para ver s
 ## Skills de trading + Capital.com
 
 En `.claude/skills/` están las 11 skills de [trader-skill](https://github.com/Jakeschincariol/trader-skill) (MIT) y una nueva, `trader-capital`, que conecta todo con la API de Capital.com (demo por defecto). La guía paso a paso está en [GUIA_TRADER.md](GUIA_TRADER.md).
+
+## Señales de mayor probabilidad: `alta_probabilidad.py`
+
+En vez de adivinar si mañana sube (~54%), mide tres cosas con más probabilidad real, con costes de CFD y fuera de muestra:
+
+1. **Horizonte**: probabilidad de que el índice suba según el plazo, de 1 día a 3 años.
+2. **Rebote tras caída**: compra cuando el RSI(2) baja de 10 en tendencia alcista (regla de Connors). Acierta un ~70% de las operaciones.
+3. **Volatilidad**: predice si mañana será un día movido o tranquilo (62% en general y ~80% en los días extremos).
+
+```bash
+python alta_probabilidad.py               # S&P 500 (US500)
+python alta_probabilidad.py --ticker ^NDX # Nasdaq 100 (US100)
+```
