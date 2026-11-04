@@ -243,6 +243,18 @@ def plan(cfg, a):
     print(f"  80% de probabilidad entre {rng_lo:.2%} y {rng_hi:.2%}  "
           f"(≈ {pts(rng_lo):,.0f} a {pts(rng_hi):,.0f} puntos)")
 
+    restante = None
+    if abierto:
+        hoy_f = d.iloc[-1]
+        hecho = (hoy_f["High"] - hoy_f["Low"]) / hoy_f["Open"]
+        restante = max(rng_med - hecho, 0)
+        print(f"  Ya recorrido hoy: {hecho:.2%} ≈ {pts(hecho):,.0f} pts ({hecho / rng_med:.0%} de lo esperado)"
+              f"  →  quedan ~{pts(restante):,.0f} pts de rango típico")
+        if hecho >= rng_hi:
+            print("  ⚠️ Ya se movió más que el máximo esperado: día excepcional, mucho cuidado.")
+        elif hecho >= rng_med:
+            print("  ⚠️ Ya hizo el rango típico del día: quedan pocos puntos, objetivos cortos o no operes.")
+
     if abierto:
         o, pc = d["Open"].iloc[-1], completos["Close"].iloc[-1]
         gap = o / pc - 1
@@ -286,6 +298,9 @@ def plan(cfg, a):
     print(f"  Límite diario: si pierdes {3 * riesgo:,.2f} $ (3 operaciones perdidas), deja de operar hoy.")
     print(f"  Objetivo mínimo por operación: ≥ 1.5 × el stop ≈ {1.5 * stop_pts:,.0f} pts, y que quepa en "
           f"el rango que queda del día.")
+    if restante is not None and pts(restante) < 1.5 * stop_pts:
+        print(f"  ⚠️ Hoy quedan ~{pts(restante):,.0f} pts de rango típico, menos que ese objetivo: "
+              "probablemente no compensa abrir operaciones nuevas.")
 
     print("\nCÓMO USARLO")
     if estado == "MOVIDO":
