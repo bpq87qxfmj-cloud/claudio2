@@ -27,3 +27,7 @@ python scalping.py --tp 0.3 --sl 0.15 --umbral 0.6 --coste-bps 0.5
 ```
 
 Muestra los resultados sin costes, con costes y con entradas al azar, para ver si el modelo aporta algo de verdad. Guarda cada operación en `operaciones_scalping.csv`.
+
+## Skills de trading + Capital.com
+
+En `.claude/skills/` están las 11 skills de [trader-skill](https://github.com/Jakeschincariol/trader-skill) (MIT) y una nueva, `trader-capital`, que conecta todo con la API de Capital.com (demo por defecto). La guía paso a paso está en [GUIA_TRADER.md](GUIA_TRADER.md).

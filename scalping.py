@@ -27,6 +27,7 @@ Uso:
   python scalping.py                              # SPY, velas de 5m
   python scalping.py --ticker QQQ --intervalo 1m
   python scalping.py --ticker ES=F --coste-bps 0.5 --tp 0.2 --sl 0.15
+  python scalping.py --csv velas_capital.csv      # velas reales de Capital.com con su spread
 """
 
 import argparse
@@ -46,6 +47,22 @@ PERIODO_MAX = {"1m": "7d", "2m": "60d", "5m": "60d", "15m": "60d"}
 # ----------------------------------------------------------------------------
 # 1. Datos
 # ----------------------------------------------------------------------------
+def cargar_csv(ruta: str, solo_regular: bool) -> pd.DataFrame:
+    """Velas de Capital.com (capital.py candles): hora UTC, precio medio y spread."""
+    df = pd.read_csv(ruta)
+    df.index = pd.DatetimeIndex(pd.to_datetime(df.pop("Datetime"), utc=True)).tz_convert("America/New_York")
+    df = df.sort_index()
+    df = df[~df.index.duplicated()]
+    if "Volume" not in df:
+        df["Volume"] = 0
+    if solo_regular:   # los CFD cotizan casi 24h: por defecto sólo 9:30-16:00 de Nueva York
+        m = df.index.hour * 60 + df.index.minute
+        df = df[(m >= 9 * 60 + 30) & (m < 16 * 60)]
+    df = df.dropna(subset=["Open", "High", "Low", "Close"])
+    df["dia"] = df.index.date
+    return df
+
+
 def descargar(ticker: str, intervalo: str) -> pd.DataFrame:
     df = yf.download(ticker, period=PERIODO_MAX[intervalo], interval=intervalo,
                      auto_adjust=True, prepost=False, progress=False)
@@ -194,13 +211,28 @@ def main():
     p.add_argument("--tp", type=float, default=0.25, help="Take-profit en %%")
     p.add_argument("--sl", type=float, default=0.20, help="Stop-loss en %%")
     p.add_argument("--umbral", type=float, default=0.58, help="Probabilidad mínima para entrar")
-    p.add_argument("--coste-bps", type=float, default=1.0,
-                   help="Coste por lado (comisión + deslizamiento) en puntos básicos. 1 bps = 0.01%%")
+    p.add_argument("--coste-bps", type=float, default=None,
+                   help="Coste por lado en puntos básicos (1 bps = 0.01%%). Por defecto 1.0, "
+                        "o la mitad del spread real si usas --csv de Capital.com")
+    p.add_argument("--csv", help="Velas propias, p. ej. de Capital.com: capital.py candles US500 --days 60")
+    p.add_argument("--24h", dest="todo_el_dia", action="store_true",
+                   help="Con --csv, usar también las horas fuera de la sesión regular de EE. UU.")
     p.add_argument("--dias-entreno", type=int, default=15, help="Días iniciales sólo de entrenamiento")
     args = p.parse_args()
 
-    print(f"\nDescargando {args.ticker} en velas de {args.intervalo}...")
-    df = descargar(args.ticker, args.intervalo)
+    if args.csv:
+        print(f"\nLeyendo velas de {args.csv}...")
+        df = cargar_csv(args.csv, solo_regular=not args.todo_el_dia)
+        if args.coste_bps is None and "Spread" in df and df["Spread"].gt(0).any():
+            spread_bps = (df["Spread"] / df["Close"]).median() * 1e4
+            args.coste_bps = round(spread_bps / 2, 3)
+            print(f"Spread real mediano: {spread_bps:.2f} bps ida y vuelta "
+                  f"-> coste por lado {args.coste_bps} bps")
+    else:
+        print(f"\nDescargando {args.ticker} en velas de {args.intervalo}...")
+        df = descargar(args.ticker, args.intervalo)
+    if args.coste_bps is None:
+        args.coste_bps = 1.0
     dias = sorted(df["dia"].unique())
     print(f"{len(df)} velas en {len(dias)} días ({dias[0]} → {dias[-1]})")
     if df["Volume"].sum() == 0:
