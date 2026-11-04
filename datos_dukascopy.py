@@ -18,7 +18,9 @@ Uso:
   python datos_dukascopy.py --indice us100 --desde 2020-01-01 --minutos 5
   python datos_dukascopy.py --indice us500 --desde 2024-01-01 --ask     # + spread de Dukascopy
 
-Los datos son para investigación personal. El precio de Dukascopy no es
+Dukascopy limita el ritmo de descarga (unos 3 archivos por minuto): un año
+de un índice tarda ~1.5 horas. El programa respeta ese límite y se puede
+interrumpir y reanudar. Los datos son para investigación personal. El precio de Dukascopy no es
 idéntico al de Capital.com (cada broker tiene su spread), pero los
 movimientos del índice son los mismos.
 """
@@ -61,7 +63,10 @@ def bajar_dia(simbolo, dia, lado, cache, espera):
             if e.code == 404:                 # día sin datos
                 open(ruta, "wb").close()
                 return ruta, True
-            pausa = min(60, 2 * (intento + 1)) if e.code == 429 else 3
+            if e.code == 429:   # el servidor pide bajar el ritmo: respetarlo
+                pausa = int(e.headers.get("Retry-After") or 30)
+            else:
+                pausa = 5
         except (urllib.error.URLError, ConnectionError, TimeoutError, OSError):
             pausa = min(60, 3 * (intento + 1))
         time.sleep(pausa)
@@ -92,7 +97,8 @@ def main():
     ap.add_argument("--ask", action="store_true", help="bajar también ASK para medir el spread (el doble de descargas)")
     ap.add_argument("--cache", default="datos/dukascopy")
     ap.add_argument("--salida", default=None, help="por defecto datos/<indice>_<N>m.csv")
-    ap.add_argument("--espera", type=float, default=0.4, help="segundos entre descargas (sé amable)")
+    ap.add_argument("--espera", type=float, default=2.0,
+                    help="segundos entre descargas. Dukascopy limita el ritmo (~3 archivos/min)")
     ap.add_argument("--24h", dest="todo", action="store_true", help="no recortar a la sesión regular de EE. UU.")
     a = ap.parse_args()
 
