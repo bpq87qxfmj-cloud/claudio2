@@ -1,0 +1,62 @@
+{
+  // Elige uno en "Ejecutar y depurar" (Ctrl+Shift+D) y pulsa ▶ (o F5).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "1. Plan del día US500 (8:35 am)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/daytrading.py",
+      "args": ["--cuenta", "${input:cuenta}", "--riesgo", "${input:riesgo}"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "2. Plan del día US100 (Nasdaq)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/daytrading.py",
+      "args": ["--indice", "us100", "--cuenta", "${input:cuenta}", "--riesgo", "${input:riesgo}"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "3. Señal de rebote (2:45 pm)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/alta_probabilidad.py",
+      "args": ["--ticker", "SPY"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "4. Backtest day trading (qué estrategias funcionan)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/daytrading.py",
+      "args": ["--backtest"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "5. Scalping (prueba del modelo)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scalping.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "6. ¿Mañana sube o baja? (predictor)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/predictor.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    }
+  ],
+  "inputs": [
+    {"id": "cuenta", "type": "promptString", "description": "Saldo de tu cuenta en $", "default": "1000"},
+    {"id": "riesgo", "type": "promptString", "description": "% de la cuenta que arriesgas por operación (0.5 a 1 recomendado)", "default": "1"}
+  ]
+}

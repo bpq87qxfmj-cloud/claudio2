@@ -80,3 +80,14 @@ python3 daytrading.py --cuenta 1000 --riesgo 1
 4. **Límite diario**: después de 3 operaciones perdedoras, deja de operar ese día.
 
 `python3 daytrading.py --backtest` muestra qué reglas de entrada tienen ventaja real tras el spread. Casi ninguna la tiene.
+
+## 7. Usarlo en VS Code (sin escribir comandos)
+
+1. Instala Python desde python.org, marcando **"Add Python to PATH"**. Después instala VS Code.
+2. Abre la carpeta `claudio2` en VS Code. Si te ofrece instalar las extensiones recomendadas de Python, acepta.
+3. **Terminal → Ejecutar tarea… → "Instalar librerías"** (solo la primera vez).
+4. Pulsa **Ctrl+Shift+D** (Ejecutar y depurar), elige en la lista de arriba uno de estos programas y pulsa ▶:
+   - **1. Plan del día US500**: te pregunta tu saldo y el % de riesgo.
+   - **3. Señal de rebote**: córrelo a las 2:45 pm (hora de CDMX).
+   - **4. Backtest**: muestra qué estrategias funcionan.
+5. El resultado aparece abajo, en la terminal.
