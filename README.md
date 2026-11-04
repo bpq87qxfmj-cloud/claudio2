@@ -55,3 +55,28 @@ python daytrading.py --backtest                        # qué estrategias intrad
 
 - **Plan del día**: rango esperado del día (acierta si será un día movido o tranquilo el 74% de las veces), hueco de apertura y probabilidad calibrada de que el precio vuelva al cierre de ayer. También calcula el stop mínimo, el tamaño en Capital.com y el límite de pérdida diaria.
 - **Backtest**: gap fill (30 años), gap fill con stop (velas de 1 hora), momentum intradía y scalping RSI(2). Una estrategia solo se marca como "con ventaja" si gana en las dos mitades del periodo.
+
+## Más historia intradía: `datos_dukascopy.py`
+
+Yahoo sólo da 60 días de velas de 5 minutos. Dukascopy publica gratis años de velas de 1 minuto de los CFDs de índices (US500, US100, US30), que siguen al mismo índice que Capital.com (el cierre diario coincide con el del S&P 500 en ~0.01%).
+
+```bash
+python datos_dukascopy.py --indice us500 --desde 2025-11-01                 # ~1.5 h por año: Dukascopy limita el ritmo
+python datos_dukascopy.py --indice us500 --desde 2025-11-01 --sin-descargar # CSV sólo con lo ya descargado
+python daytrading.py --backtest --csv datos/us500_5m.csv
+python scalping.py --csv datos/us500_5m.csv --coste-bps 0.55
+```
+
+Si se corta, vuelve a ejecutarlo: sigue donde se quedó.
+
+Resultado con 214 días de velas de 5 min del US500 (nov 2025 – sep 2026), spread de Capital.com incluido:
+
+| Estrategia | Operaciones | Acierto | Profit factor | Veredicto |
+|---|---|---|---|---|
+| Scalping con machine learning | 1,319 | 45.7% | 0.87 (AUC 0.50 = azar) | pierde |
+| Scalping RSI(2) compras / ventas | 840 / 842 | 58% / 52% | 0.79 / 0.79 | pierde |
+| Ruptura del rango de apertura (ORB 5 min) | 214 | 19.6% | 0.84 | pierde |
+| Momentum última media hora | 213 | 41.8% | 0.75 | pierde |
+| Gap fill (orden real 5 min) | 51–62 | 59–67% | 0.69–0.80 | pierde |
+
+Con 3.5 veces más datos que Yahoo, ninguna regla intradía tiene ventaja después del spread. Lo que sí se predice es el rango del día y la probabilidad de tocar un nivel.

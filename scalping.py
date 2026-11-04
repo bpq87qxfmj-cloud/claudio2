@@ -306,7 +306,11 @@ def main():
 
     print("\nCómo leer esto:")
     print(" - Si el modelo con costes no supera claramente al azar, no hay ventaja real.")
-    print(" - 2 meses de datos son POCOS: los resultados pueden ser pura suerte.")
+    if len(dias_test) < 120:
+        print(f" - Sólo {len(dias_test)} días de prueba son POCOS: los resultados pueden ser pura suerte.")
+        print("   Para más historia: python datos_dukascopy.py y luego --csv.")
+    else:
+        print(f" - {len(dias_test)} días de prueba: si aun así no supera al azar, la ventaja no está ahí.")
     print(" - Prueba distintos --tp/--sl/--umbral, pero cuidado con sobreajustar.")
     print(" - Proyecto educativo. NO es asesoría financiera.\n")
 

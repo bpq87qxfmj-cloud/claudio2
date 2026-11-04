@@ -100,6 +100,8 @@ def main():
     ap.add_argument("--espera", type=float, default=2.0,
                     help="segundos entre descargas. Dukascopy limita el ritmo (~3 archivos/min)")
     ap.add_argument("--24h", dest="todo", action="store_true", help="no recortar a la sesión regular de EE. UU.")
+    ap.add_argument("--sin-descargar", action="store_true",
+                    help="no descargar nada: construir el CSV sólo con los días que ya están en la caché")
     a = ap.parse_args()
 
     simbolo = SIMBOLOS[a.indice]
@@ -112,7 +114,7 @@ def main():
     print(f"{simbolo}: {len(dias)} días hábiles de {desde} a {hasta} ({total} archivos)")
 
     hechos, nuevos, t0 = 0, 0, time.time()
-    for lado in lados:
+    for lado in ([] if a.sin_descargar else lados):
         for dia in dias:
             _, nuevo = bajar_dia(simbolo, dia, lado, a.cache, a.espera)
             hechos += 1
@@ -121,15 +123,25 @@ def main():
                 vel = nuevos / (time.time() - t0)
                 print(f"  {hechos}/{total} ({dia}) {vel:.1f} archivos/s, faltan ~"
                       f"{(total - hechos) / max(vel, 0.01) / 60:.0f} min", flush=True)
-    print(f"Descarga completa ({nuevos} nuevos). Construyendo velas de {a.minutos} min...")
+    print("Sin descargar: se usa sólo la caché." if a.sin_descargar else f"Descarga completa ({nuevos} nuevos).",
+          f"Construyendo velas de {a.minutos} min...")
 
+    def en_cache(lado, dia):
+        return os.path.join(a.cache, simbolo, lado, f"{dia:%Y}", f"{dia:%Y-%m-%d}.bi5")
+
+    faltan = [d for d in dias if not os.path.exists(en_cache("BID", d))]
+    if faltan:
+        print(f"  Aviso: {len(faltan)} días sin descargar (p. ej. {faltan[0]}); se omiten. "
+              "Vuelve a ejecutarlo sin --sin-descargar para completarlos.")
     partes = []
     for dia in dias:
-        bid = leer_dia(os.path.join(a.cache, simbolo, "BID", f"{dia:%Y}", f"{dia:%Y-%m-%d}.bi5"), dia)
+        if dia in faltan:
+            continue
+        bid = leer_dia(en_cache("BID", dia), dia)
         if bid is None:
             continue
-        if a.ask:
-            ask = leer_dia(os.path.join(a.cache, simbolo, "ASK", f"{dia:%Y}", f"{dia:%Y-%m-%d}.bi5"), dia)
+        if a.ask and os.path.exists(en_cache("ASK", dia)):
+            ask = leer_dia(en_cache("ASK", dia), dia)
             if ask is not None:
                 bid["Spread"] = (ask["Close"] - bid["Close"]).reindex(bid.index)
         partes.append(bid)
