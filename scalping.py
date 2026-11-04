@@ -218,6 +218,8 @@ def main():
     p.add_argument("--24h", dest="todo_el_dia", action="store_true",
                    help="Con --csv, usar también las horas fuera de la sesión regular de EE. UU.")
     p.add_argument("--dias-entreno", type=int, default=15, help="Días iniciales sólo de entrenamiento")
+    p.add_argument("--reentreno", type=int, default=0,
+                   help="Reentrenar cada N días (0 = automático: 1 con pocos datos, 21 con años)")
     args = p.parse_args()
 
     if args.csv:
@@ -247,11 +249,15 @@ def main():
     if dias_entreno < 2:
         raise SystemExit("Muy pocos días de datos. Usa un intervalo de 2m o 5m.")
 
-    # Walk-forward: para cada día de prueba, entrena con todos los días anteriores
+    # Walk-forward: entrena con todos los días anteriores y prueba el bloque siguiente.
+    # Con pocos datos reentrena cada día; con años de datos, cada ~mes (21 días).
+    dias_test = dias[dias_entreno:]
+    paso = args.reentreno or (1 if len(dias_test) <= 120 else 21)
     probas = pd.Series(index=df.index, dtype=float)
-    for d in dias[dias_entreno:]:
-        train = validos & (df["dia"] < d)
-        test = df["dia"] == d
+    for k in range(0, len(dias_test), paso):
+        bloque = dias_test[k:k + paso]
+        train = validos & (df["dia"] < bloque[0])
+        test = df["dia"].isin(bloque)
         modelo = HistGradientBoostingClassifier(
             max_depth=3, learning_rate=0.05, max_iter=200,
             min_samples_leaf=100, l2_regularization=1.0, random_state=42)

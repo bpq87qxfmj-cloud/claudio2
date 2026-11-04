@@ -34,6 +34,8 @@ Uso:
   python daytrading.py                              # plan de hoy, US500
   python daytrading.py --indice us100 --cuenta 2000 --riesgo 0.5
   python daytrading.py --backtest
+  python datos_dukascopy.py --indice us500 --desde 2021-01-01   # años de velas de 5 min
+  python daytrading.py --backtest --csv datos/us500_5m.csv
 """
 
 import argparse
@@ -335,11 +337,11 @@ def bt_gap(d, cost):
             linea(f"   … sólo últimos 3 años", resumen(ret[msk & (d.index >= hace3)]))
 
 
-def bt_gap_stop(h, cost):
-    print("\n2) GAP FILL CON STOP, orden real con velas de 1 hora (si en la misma vela se tocan")
-    print("   stop y objetivo se cuenta el stop). Huecos de 0.1% a 0.5%, últimos ~3 años.")
+def bt_gap_stop(barras, cost, etiqueta):
+    print(f"\n2) GAP FILL CON Y SIN STOP, viendo el orden real dentro del día ({etiqueta}).")
+    print("   Huecos de 0.1% a 0.5%. Si en la misma vela se tocan stop y objetivo, cuenta el stop.")
     print(f"  {'':<38}{'Ops':>6}{'Acierto':>9}{'Media':>10}{'PF':>7}")
-    dias = [g for _, g in h.groupby(h.index.date)]
+    dias = [g for _, g in barras.groupby(barras.index.date)]
     res = {}
     for k in range(1, len(dias)):
         g, pc = dias[k], dias[k - 1]["Close"].iloc[-1]
@@ -348,34 +350,77 @@ def bt_gap_stop(h, cost):
         if not 0.001 <= abs(gap) < 0.005:
             continue
         s = 1 if gap < 0 else -1
+        lo_, hi_ = g["Low"].to_numpy(), g["High"].to_numpy()
         for stop in (None, 0.005, 0.01):
             out = None
-            for _, b in g.iterrows():
-                if stop and ((b["Low"] <= o * (1 - stop)) if s == 1 else (b["High"] >= o * (1 + stop))):
+            for lo, hi in zip(lo_, hi_):
+                if stop and ((lo <= o * (1 - stop)) if s == 1 else (hi >= o * (1 + stop))):
                     out = -stop
                     break
-                if (b["High"] >= pc) if s == 1 else (b["Low"] <= pc):
+                if (hi >= pc) if s == 1 else (lo <= pc):
                     out = s * (pc / o - 1)
                     break
             if out is None:
                 out = s * (g["Close"].iloc[-1] / o - 1)
-            res.setdefault(stop, []).append(out - cost)
-    for stop, v in res.items():
-        linea("sin stop" if stop is None else f"stop {stop:.1%}", resumen(v), veredicto(v))
+            res.setdefault(("baja" if s == 1 else "sube", stop), []).append(out - cost)
+    for (lado, stop), v in sorted(res.items(), key=lambda kv: (kv[0][0], kv[0][1] or 0)):
+        nombre = f"hueco {lado}, " + ("sin stop" if stop is None else f"stop {stop:.1%}")
+        linea(nombre, resumen(v), veredicto(v))
 
 
-def bt_momentum(h, cost):
-    print("\n3) MOMENTUM INTRADÍA (Gao et al. 2018): si de ayer al cierre de la 1ª hora sube,")
-    print("   comprar la última media hora (15:30-16:00); si baja, vender. Últimos ~3 años.")
+def bt_momentum(barras, cost, etiqueta, minutos_inicio):
+    print(f"\n3) MOMENTUM INTRADÍA (Gao et al. 2018) ({etiqueta}): si de ayer a las "
+          f"{'10:00' if minutos_inicio == 30 else '10:30'} sube,")
+    print("   comprar la última media hora (15:30-16:00); si baja, vender.")
     filas, prev = [], None
-    for _, g in h.groupby(h.index.date):
-        if prev is not None and len(g) >= 7:
-            primera = g["Close"].iloc[0] / prev - 1
-            ultima = g["Close"].iloc[-1] / g["Open"].iloc[-1] - 1
-            filas.append(np.sign(primera) * ultima - cost)
+    for dia, g in barras.groupby(barras.index.date):
+        t0 = pd.Timestamp(dia, tz=NY) + pd.Timedelta(hours=9, minutes=30)
+        ini = g[g.index < t0 + pd.Timedelta(minutes=minutos_inicio)]
+        fin = g[g.index >= t0 + pd.Timedelta(hours=6)]
+        if prev is not None and len(ini) and len(fin):
+            primera = ini["Close"].iloc[-1] / prev - 1
+            filas.append(np.sign(primera) * (fin["Close"].iloc[-1] / fin["Open"].iloc[0] - 1) - cost)
         prev = g["Close"].iloc[-1]
     print(f"  {'':<38}{'Ops':>6}{'Acierto':>9}{'Media':>10}{'PF':>7}")
     linea("todas las sesiones", resumen(filas), veredicto(filas))
+
+
+def bt_orb(m5, cost, etiqueta):
+    print(f"\n5) RUPTURA DEL RANGO DE APERTURA, ORB de 5 min (Zarattini y Aziz 2023) ({etiqueta}):")
+    print("   dirección de la 1ª vela de 5 min; entrar en la 2ª; stop en el otro extremo de la")
+    print("   1ª vela; objetivo 10 veces el riesgo o salir al cierre. Acierto bajo por diseño.")
+    print(f"  {'':<38}{'Ops':>6}{'Acierto':>9}{'Media':>10}{'PF':>7}")
+    ops, rs = [], []
+    for _, g in m5.groupby(m5.index.date):
+        if len(g) < 10:
+            continue
+        b0 = g.iloc[0]
+        if b0["Close"] == b0["Open"]:
+            continue
+        s = 1 if b0["Close"] > b0["Open"] else -1
+        e = g["Open"].iloc[1]
+        stop = b0["Low"] if s == 1 else b0["High"]
+        riesgo = (e - stop) * s
+        if riesgo <= 0:
+            continue
+        obj = e + s * 10 * riesgo
+        out = None
+        for _, b in g.iloc[1:].iterrows():
+            if (b["Low"] <= stop) if s == 1 else (b["High"] >= stop):
+                out = stop
+                break
+            if (b["High"] >= obj) if s == 1 else (b["Low"] <= obj):
+                out = obj
+                break
+        if out is None:
+            out = g["Close"].iloc[-1]
+        ops.append(s * (out / e - 1) - cost)
+        rs.append((s * (out - e) - cost * e) / riesgo)
+    linea("en % del precio", resumen(ops), veredicto(ops))
+    if rs:
+        r = pd.Series(rs)
+        print(f"  {'':<38}en múltiplos del riesgo (R): media {r.mean():+.3f} R por operación, "
+              f"ganadora media {r[r > 0].mean():+.2f} R")
 
 
 def scalp_rsi(df, cost, max_velas, lado):
@@ -400,20 +445,27 @@ def scalp_rsi(df, cost, max_velas, lado):
     return ops
 
 
-def bt_scalping(m5, h, cost):
+def bt_scalping(conjuntos, cost):
     print("\n4) SCALPING DE REVERSIÓN: RSI(2) < 10 compra (o > 90 vende), salida al cruzar")
     print("   la media de 5 velas, máximo 12 velas, siempre cerrado al final del día.")
     print(f"  {'':<38}{'Ops':>6}{'Acierto':>9}{'Media':>10}{'PF':>7}")
-    for nom, df, mx in [("velas 5 min (60 días)", m5, 12), ("velas 1 hora (3 años)", h, 6)]:
+    for nom, df, mx in conjuntos:
         for lado, txt in [(1, "compras"), (-1, "ventas")]:
             ops = scalp_rsi(df, cost, mx, lado)
             linea(f"{nom}, {txt}", resumen(ops), veredicto(ops))
 
 
+def leer_csv_5m(ruta):
+    df = pd.read_csv(ruta)
+    df.index = pd.DatetimeIndex(pd.to_datetime(df.pop("Datetime"), utc=True)).tz_convert(NY)
+    m = df.index.hour * 60 + df.index.minute
+    df = df[(m >= 9 * 60 + 30) & (m < 16 * 60)].sort_index()
+    return df[~df.index.duplicated()].dropna(subset=["Open", "High", "Low", "Close"])
+
+
 def backtest(cfg, a):
     cost = 2 * a.coste_bps / 1e4
-    print(f"\nBACKTEST {cfg['nombre']} con datos de {cfg['etf']}, coste {2 * a.coste_bps:.1f} bps "
-          f"por operación (spread de Capital.com)")
+    print(f"\nBACKTEST {cfg['nombre']}, coste {2 * a.coste_bps:.1f} bps por operación (spread de Capital.com)")
     print("Veredicto: ✔ sólo si hay ≥ 100 operaciones y PF > 1.1 en CADA mitad del periodo")
     print("(si sólo gana en una mitad, probablemente fue suerte o la ventaja desapareció).")
     d = bajar(cfg["etf"], start=cfg["inicio"])
@@ -421,15 +473,28 @@ def backtest(cfg, a):
     vix = bajar("^VIX", start=cfg["inicio"])["Close"]
     h = bajar_intradia(cfg["etf"], "1h", "730d")
     h = h[[sesion_completa(x) for x in h.index.date]]
-    m5 = bajar_intradia(cfg["etf"], "5m", "60d")
-    m5 = m5[[sesion_completa(x) for x in m5.index.date]]
+    if a.csv:
+        m5 = leer_csv_5m(a.csv)
+        n_dias = len(set(m5.index.date))
+        et5 = f"velas 5 min, {n_dias} días ({m5.index[0].year}-{m5.index[-1].year})"
+    else:
+        m5 = bajar_intradia(cfg["etf"], "5m", "60d")
+        m5 = m5[[sesion_completa(x) for x in m5.index.date]]
+        et5 = f"velas 5 min, sólo {len(set(m5.index.date))} días: usa --csv para más"
+    print(f"Datos intradía: {et5}; velas 1 hora de {cfg['etf']}, ~3 años")
 
     bt_gap(d, cost)
-    bt_gap_stop(h, cost)
-    bt_momentum(h, cost)
-    bt_scalping(m5, h, cost)
+    if a.csv:
+        bt_gap_stop(m5, cost, et5)
+        bt_momentum(m5, cost, et5, 30)
+    else:
+        bt_gap_stop(h, cost, "velas 1 hora, ~3 años")
+        bt_momentum(h, cost, "velas 1 hora, ~3 años", 60)
+    bt_scalping([(et5.split(",")[0] + f" ({len(set(m5.index.date))} días)", m5, 12),
+                 ("velas 1 hora (~3 años)", h, 6)], cost)
+    bt_orb(m5, cost, et5)
 
-    print("\n5) PRONÓSTICO DEL RANGO DEL DÍA (lo que sí funciona)")
+    print("\n6) PRONÓSTICO DEL RANGO DEL DÍA (lo que sí funciona)")
     m, X, y, q10, q90, res = modelo_rango(d, vix[[sesion_completa(x.date()) for x in vix.index]])
     print(f"  Fuera de muestra {res['desde']}-hoy:")
     print(f"  - Explica el {res['r2']:.0%} de las diferencias de rango entre días (R²)")
@@ -451,15 +516,15 @@ def backtest(cfg, a):
         r = resumen(G.loc[p.index[msk], "ret"] - cost)
         print(f"  {f'{lo:.0%}-{min(hi, 1):.0%}':<16}{msk.sum():>7}{toca[msk].mean():>16.0%}"
               f"{r['avg']:>16.3%}")
-    print("\nCONCLUSIÓN: el rango y la probabilidad de tocar un nivel se predicen bien,")
-    print("pero ninguna regla de entrada intradía mantiene ventaja estable después del spread.")
-    print("Úsalo para poner stops y tamaños realistas, no como señal de compra/venta.\n")
+    print("\nCONCLUSIÓN: mira la columna de veredicto. El rango y la probabilidad de tocar un")
+    print("nivel se predicen bien; las reglas de entrada, casi nunca con ventaja estable.\n")
 
 
 def main():
     ap = argparse.ArgumentParser(description="Day trading / scalping: plan del día y backtest honesto")
     ap.add_argument("--indice", default="us500", choices=list(INDICES))
     ap.add_argument("--backtest", action="store_true", help="probar todas las estrategias")
+    ap.add_argument("--csv", help="velas de 5 min con años de historia (datos_dukascopy.py o capital.py candles)")
     ap.add_argument("--cuenta", type=float, default=1000, help="saldo de tu cuenta en $")
     ap.add_argument("--riesgo", type=float, default=1.0, help="%% de la cuenta que arriesgas por operación")
     ap.add_argument("--margen", type=float, default=5.0, help="margen del CFD en %% (5%% = apalancamiento 1:20)")
