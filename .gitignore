@@ -2,3 +2,5 @@ operaciones_scalping.csv
 
 trader/
 datos/
+registro_agente/
+__pycache__/

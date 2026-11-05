@@ -21,7 +21,7 @@
       "cwd": "${workspaceFolder}"
     },
     {
-      "name": "3. Señal de rebote (2:45 pm)",
+      "name": "3. Señal de rebote (15:45 de Nueva York)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/alta_probabilidad.py",
@@ -51,6 +51,41 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/predictor.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "7. Agente: backtest de sus reglas",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/agente.py",
+      "args": ["--backtest"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "8. Agente: ¿qué haría hoy? (simulación, sin claves)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/agente.py",
+      "args": ["--simular", "--cuenta", "${input:cuenta}"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "9. Agente: probar conexión con Capital.com DEMO",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/agente.py",
+      "args": ["--probar"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "10. Agente automático (DEMO, déjalo encendido)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/agente.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}"
     }

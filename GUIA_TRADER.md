@@ -88,6 +88,60 @@ python3 daytrading.py --cuenta 1000 --riesgo 1
 3. **Terminal → Ejecutar tarea… → "Instalar librerías"** (solo la primera vez).
 4. Pulsa **Ctrl+Shift+D** (Ejecutar y depurar), elige en la lista de arriba uno de estos programas y pulsa ▶:
    - **1. Plan del día US500**: te pregunta tu saldo y el % de riesgo.
-   - **3. Señal de rebote**: córrelo a las 2:45 pm (hora de CDMX).
+   - **3. Señal de rebote**: córrelo a las 15:45 de Nueva York (2:45 pm de CDMX en invierno, 1:45 pm en verano).
    - **4. Backtest**: muestra qué estrategias funcionan.
 5. El resultado aparece abajo, en la terminal.
+
+## 8. Agente automático (opera solo)
+
+`agente.py` hace solo la regla del rebote RSI(2), la única que mostró ventaja estable después del spread:
+
+- A las **15:45 de Nueva York** (2:45 pm de CDMX en invierno, 1:45 pm en verano), si el RSI(2) está por debajo de 10 y el índice está por encima de su media de 200 días, **compra** un CFD del US500 con un **stop de -5%** puesto en Capital.com.
+- Los días siguientes, a la misma hora, **vende** cuando el precio supera su media de 5 días, o a los 10 días como máximo.
+- No hace scalping: con 10 meses de velas de 5 minutos, todas las reglas intradía perdieron después del spread.
+
+**Qué esperar:** desde 1996, unas 8 operaciones al año, con un acierto del 72% y un profit factor de 1.9. Con exposición 1 (sin apalancamiento) son **~3% al año** y una peor caída de -17%. Comprar y mantener el índice dio ~8% al año, pero con una caída de -57%. Pasa semanas sin operar: es normal.
+
+### Paso 1: pruébalo sin claves
+En VS Code, **Ctrl+Shift+D**:
+- **7. Agente: backtest de sus reglas**: cómo le habría ido desde 1995.
+- **8. Agente: ¿qué haría hoy?**: la decisión con el último precio. No envía nada.
+
+### Paso 2: conéctalo a tu cuenta DEMO
+1. En Capital.com, cambia a la **cuenta demo**. Ve a Ajustes → **API integrations** → genera una clave con una contraseña propia para la clave.
+2. En **PowerShell** (nunca en el chat), una sola vez:
+   ```powershell
+   setx CAPITAL_API_KEY "tu-clave"
+   setx CAPITAL_IDENTIFIER "tu-email-de-capital"
+   setx CAPITAL_PASSWORD "la-contraseña-de-la-clave"
+   ```
+3. Cierra VS Code y vuelve a abrirlo, para que vea las variables nuevas.
+4. **9. Agente: probar conexión** debe decir "Conectado a la cuenta DEMO", con tu saldo y el tamaño que usaría. No envía órdenes.
+
+### Paso 3: déjalo trabajar
+Tienes dos formas:
+- **A. Con VS Code abierto:** **10. Agente automático** se queda encendido y espera la hora. La PC no se puede dormir.
+- **B. Con el Programador de tareas (recomendado):** en la terminal de VS Code, una vez:
+  ```powershell
+  python agente.py --instalar-windows
+  ```
+  Esto crea dos tareas, de lunes a viernes a las 13:46 y a las 14:46. Una de ellas cae a las 15:46 de Nueva York; la otra cubre el cambio de horario de EE. UU. y no hace nada. La PC debe estar prendida y con tu sesión abierta a esa hora. Si acabas de usar `setx`, cierra sesión de Windows y vuelve a entrar. Para quitar las tareas: `python agente.py --desinstalar-windows`.
+
+Lo que hace queda en `registro_agente/agente.log` (texto) y `registro_agente/log.csv` (se abre en Excel).
+
+### Avisos al celular (opcional, Telegram)
+1. En Telegram, abre **BotFather** → `/newbot` → te da un **token**.
+2. Mándale cualquier mensaje a tu bot. Luego abre `https://api.telegram.org/bot<TOKEN>/getUpdates` en el navegador y copia el número de `"chat":{"id": ...}`.
+3. En PowerShell: `setx TELEGRAM_BOT_TOKEN "..."` y `setx TELEGRAM_CHAT_ID "..."`.
+
+Cada día te llega qué decidió: esperar, comprar, mantener o vender.
+
+### Candados que trae
+- **Siempre usa la DEMO.** Para la cuenta real hacen falta dos cosas que haces tú: `CAPITAL_LIVE=1` **y** `--real`. Recomendación: al menos 2 o 3 meses en la demo, comparando con el backtest, antes de pensarlo.
+- Tiene una posición como máximo por índice; nunca promedia. No toca las posiciones que abras tú; si ya tienes una en el US500, no abre otra.
+- No compra si el spread está anormalmente ancho, si el mercado no está operable o si la cuenta cayó más de 20% desde su máximo.
+- La exposición máxima es 2 veces tu saldo. `--exposicion 1` equivale a comprar el índice con todo tu saldo, sin apalancamiento.
+- Si apagas el agente, las posiciones siguen en Capital.com con su stop.
+
+Opciones: `--indices us500,us100` (reparte la exposición entre los dos), `--exposicion 0.5`, `--stop 5`, `--max-caida 20`.
+

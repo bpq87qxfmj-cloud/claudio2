@@ -56,6 +56,21 @@ python daytrading.py --backtest                        # qué estrategias intrad
 - **Plan del día**: rango esperado del día (acierta si será un día movido o tranquilo el 74% de las veces), hueco de apertura y probabilidad calibrada de que el precio vuelva al cierre de ayer. También calcula el stop mínimo, el tamaño en Capital.com y el límite de pérdida diaria.
 - **Backtest**: gap fill (30 años), gap fill con stop (velas de 1 hora), momentum intradía y scalping RSI(2). Una estrategia solo se marca como "con ventaja" si gana en las dos mitades del periodo.
 
+## Agente automático: `agente.py`
+
+Opera solo, en la cuenta **demo** de Capital.com, la regla que sí tuvo ventaja: el rebote RSI(2) del US500. Decide cada día a las 15:45 de Nueva York, compra con un stop de -5% y vende cuando el precio supera su media de 5 días.
+
+```bash
+python agente.py --backtest          # desde 1996: 72% de acierto, PF 1.9, ~3%/año con exposición 1
+python agente.py --simular           # qué haría hoy (sin claves)
+python agente.py --probar            # conecta a tu DEMO, no envía nada
+python agente.py                     # se queda encendido y opera solo
+python agente.py --instalar-windows  # o que lo lance el Programador de tareas
+python test_agente.py                # 17 pruebas sin internet
+```
+
+Pasos, candados y avisos por Telegram en [GUIA_TRADER.md](GUIA_TRADER.md#8-agente-automático-opera-solo).
+
 ## Más historia intradía: `datos_dukascopy.py`
 
 Yahoo sólo da 60 días de velas de 5 minutos. Dukascopy publica gratis años de velas de 1 minuto de los CFDs de índices (US500, US100, US30), que siguen al mismo índice que Capital.com (el cierre diario coincide con el del S&P 500 en ~0.01%).
