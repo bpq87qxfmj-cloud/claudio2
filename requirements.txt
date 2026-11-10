@@ -1,0 +1,7 @@
+numpy
+pandas>=2.2
+pyarrow
+requests
+lightgbm>=4.6
+matplotlib
+pytest

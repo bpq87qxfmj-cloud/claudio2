@@ -1,0 +1,1076 @@
+{
+  "XAUUSD": {
+    "summary": {
+      "mercado": "XAUUSD",
+      "coste": 0.3,
+      "IC": 0.0128,
+      "meses IC>0": "79%",
+      "meses activos": "6/28",
+      "ops": 359,
+      "acierto": 0.526,
+      "bruto/op": 0.381,
+      "neto/op": 0.081,
+      "neto total": 29.1,
+      "t-stat": 0.39,
+      "max DD": 85.5
+    },
+    "edge": [
+      {
+        "q": "resto (80 %)",
+        "barras": 655219,
+        "ventaja_bruta": 0.02483690143915268,
+        "ventaja/coste": 0.08278967146384228
+      },
+      {
+        "q": "top 20-5 %",
+        "barras": 122853,
+        "ventaja_bruta": 0.053090767407535086,
+        "ventaja/coste": 0.17696922469178364
+      },
+      {
+        "q": "top 5-2 %",
+        "barras": 24571,
+        "ventaja_bruta": 0.10655709234708577,
+        "ventaja/coste": 0.35519030782361927
+      },
+      {
+        "q": "top 2-1 %",
+        "barras": 8190,
+        "ventaja_bruta": 0.07448586263646972,
+        "ventaja/coste": 0.24828620878823243
+      },
+      {
+        "q": "top 1 %",
+        "barras": 8191,
+        "ventaja_bruta": 0.161576873267929,
+        "ventaja/coste": 0.5385895775597633
+      }
+    ],
+    "months": [
+      {
+        "month": "2024-01",
+        "trees": 12,
+        "ic": 0.032841568603007416,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-02",
+        "trees": 49,
+        "ic": 0.00815408705432225,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-03",
+        "trees": 87,
+        "ic": 0.024827908524717182,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-04",
+        "trees": 32,
+        "ic": -0.006555161331494437,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-05",
+        "trees": 10,
+        "ic": 0.007950800416349641,
+        "thr": 0.027831953248138978,
+        "val_q": 0.02,
+        "val_tstat": 1.2773049048847886,
+        "trades": 41,
+        "net": -7.058675525683456,
+        "gross": 5.241324474316544
+      },
+      {
+        "month": "2024-06",
+        "trees": 37,
+        "ic": 0.0017636430606391314,
+        "thr": 0.08342772928083317,
+        "val_q": 0.01,
+        "val_tstat": 1.6839466887001375,
+        "trades": 11,
+        "net": -3.9502337630765894,
+        "gross": -0.6502337630765893
+      },
+      {
+        "month": "2024-07",
+        "trees": 2,
+        "ic": -0.0026593456213188102,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-08",
+        "trees": 4,
+        "ic": -0.002561695910818197,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-09",
+        "trees": 17,
+        "ic": -0.0035470303610211085,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-10",
+        "trees": 1,
+        "ic": 0.0031253271193430413,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-11",
+        "trees": 42,
+        "ic": 0.028492349138561936,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-12",
+        "trees": 49,
+        "ic": 0.02714403608439345,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-01",
+        "trees": 67,
+        "ic": 0.0248157008922083,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-02",
+        "trees": 97,
+        "ic": 0.016327741620850645,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-03",
+        "trees": 36,
+        "ic": 0.007780797215354597,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-04",
+        "trees": 51,
+        "ic": 0.0021801368369233536,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-05",
+        "trees": 29,
+        "ic": 0.024899584668025332,
+        "thr": 0.05325020955348435,
+        "val_q": 0.01,
+        "val_tstat": 1.229374409485616,
+        "trades": 73,
+        "net": -63.86632061364203,
+        "gross": -41.96632061364204
+      },
+      {
+        "month": "2025-06",
+        "trees": 29,
+        "ic": 0.001549509581063669,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-07",
+        "trees": 71,
+        "ic": 5.0486475921886784e-05,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-08",
+        "trees": 28,
+        "ic": -0.017599574193580114,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-09",
+        "trees": 3,
+        "ic": -0.008242326936659241,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-10",
+        "trees": 15,
+        "ic": 0.04649178986757894,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-11",
+        "trees": 216,
+        "ic": 0.05154007563276475,
+        "thr": 0.13508239273517259,
+        "val_q": 0.005,
+        "val_tstat": 2.589824366104697,
+        "trades": 41,
+        "net": 49.700461258435986,
+        "gross": 62.000461258435976
+      },
+      {
+        "month": "2025-12",
+        "trees": 360,
+        "ic": 0.014186874777886466,
+        "thr": 0.14588458530068704,
+        "val_q": 0.01,
+        "val_tstat": 1.3463815034058,
+        "trades": 122,
+        "net": -0.14876561577136904,
+        "gross": 36.451234384228634
+      },
+      {
+        "month": "2026-01",
+        "trees": 58,
+        "ic": 0.01346483476078428,
+        "thr": 0.08901300199219286,
+        "val_q": 0.005,
+        "val_tstat": 1.3362437131560112,
+        "trades": 71,
+        "net": 54.39511321761866,
+        "gross": 75.69511321761864
+      },
+      {
+        "month": "2026-02",
+        "trees": 52,
+        "ic": 0.01289217441963299,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2026-03",
+        "trees": 38,
+        "ic": 0.019935567154975076,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2026-04",
+        "trees": 41,
+        "ic": 0.059694383294716706,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      }
+    ]
+  },
+  "NAS100": {
+    "summary": {
+      "mercado": "NAS100",
+      "coste": 1.0,
+      "IC": 0.0012,
+      "meses IC>0": "54%",
+      "meses activos": "2/28",
+      "ops": 122,
+      "acierto": 0.443,
+      "bruto/op": -2.332,
+      "neto/op": -3.332,
+      "neto total": -406.5,
+      "t-stat": -2.24,
+      "max DD": 430.0
+    },
+    "edge": [
+      {
+        "q": "resto (80 %)",
+        "barras": 629332,
+        "ventaja_bruta": -0.0015428402703211096,
+        "ventaja/coste": -0.0015428402703211096
+      },
+      {
+        "q": "top 20-5 %",
+        "barras": 117999,
+        "ventaja_bruta": 0.1593535036578977,
+        "ventaja/coste": 0.1593535036578977
+      },
+      {
+        "q": "top 5-2 %",
+        "barras": 23600,
+        "ventaja_bruta": 0.13402586184156487,
+        "ventaja/coste": 0.13402586184156487
+      },
+      {
+        "q": "top 2-1 %",
+        "barras": 7867,
+        "ventaja_bruta": 0.28518941670013637,
+        "ventaja/coste": 0.28518941670013637
+      },
+      {
+        "q": "top 1 %",
+        "barras": 7867,
+        "ventaja_bruta": -0.23905851972810035,
+        "ventaja/coste": -0.23905851972810035
+      }
+    ],
+    "months": [
+      {
+        "month": "2024-01",
+        "trees": 23,
+        "ic": 0.008225627562323343,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-02",
+        "trees": 4,
+        "ic": -0.012079966444994403,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-03",
+        "trees": 6,
+        "ic": 0.01580827156269688,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-04",
+        "trees": 2,
+        "ic": -0.008195728071766073,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-05",
+        "trees": 1,
+        "ic": -0.02466207579195957,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-06",
+        "trees": 14,
+        "ic": 0.010928159272881925,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-07",
+        "trees": 39,
+        "ic": 0.03991642149401176,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-08",
+        "trees": 51,
+        "ic": -0.02364681681834852,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-09",
+        "trees": 7,
+        "ic": 0.008179398942385093,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-10",
+        "trees": 1,
+        "ic": -0.02024936017551771,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-11",
+        "trees": 2,
+        "ic": 0.0011172696147849106,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-12",
+        "trees": 17,
+        "ic": -0.002209688037807934,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-01",
+        "trees": 2,
+        "ic": 0.0014742281363072948,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-02",
+        "trees": 86,
+        "ic": 0.02707364612866309,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-03",
+        "trees": 25,
+        "ic": 0.012858784023373015,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-04",
+        "trees": 2,
+        "ic": 0.006173327939864279,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-05",
+        "trees": 52,
+        "ic": -0.0027643263405474788,
+        "thr": 0.05437749146728221,
+        "val_q": 0.02,
+        "val_tstat": 1.9039593688643512,
+        "trades": 103,
+        "net": -320.6808791096136,
+        "gross": -217.6808791096136
+      },
+      {
+        "month": "2025-06",
+        "trees": 48,
+        "ic": 0.004472456486830006,
+        "thr": 0.05966658168230216,
+        "val_q": 0.005,
+        "val_tstat": 1.6513933650102939,
+        "trades": 19,
+        "net": -85.81589218899599,
+        "gross": -66.81589218899599
+      },
+      {
+        "month": "2025-07",
+        "trees": 1,
+        "ic": -0.012077477895549577,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-08",
+        "trees": 6,
+        "ic": 0.0017904832678577866,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-09",
+        "trees": 1,
+        "ic": -0.01662574784000915,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-10",
+        "trees": 1,
+        "ic": 0.004821072858182122,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-11",
+        "trees": 1,
+        "ic": -0.01213114807772305,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-12",
+        "trees": 25,
+        "ic": -0.004295971604252939,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2026-01",
+        "trees": 14,
+        "ic": 0.0027261142429702025,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2026-02",
+        "trees": 1,
+        "ic": -0.0033635659887249294,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2026-03",
+        "trees": 3,
+        "ic": 0.0099631007324706,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2026-04",
+        "trees": 78,
+        "ic": -0.024061536199821796,
+        "thr": Infinity,
+        "val_q": NaN,
+        "val_tstat": NaN,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      }
+    ]
+  },
+  "SPX500": {
+    "summary": {
+      "mercado": "SPX500",
+      "coste": 0.5,
+      "IC": 0.0015,
+      "meses IC>0": "64%",
+      "meses activos": "0/28",
+      "ops": 0,
+      "acierto": null,
+      "bruto/op": null,
+      "neto/op": null,
+      "neto total": 0.0,
+      "t-stat": null,
+      "max DD": 0.0
+    },
+    "edge": [
+      {
+        "q": "resto (80 %)",
+        "barras": 621091,
+        "ventaja_bruta": 0.027036049918595224,
+        "ventaja/coste": 0.05407209983719045
+      },
+      {
+        "q": "top 20-5 %",
+        "barras": 116454,
+        "ventaja_bruta": 0.02353690855445407,
+        "ventaja/coste": 0.04707381710890814
+      },
+      {
+        "q": "top 5-2 %",
+        "barras": 23291,
+        "ventaja_bruta": 0.03475655706119721,
+        "ventaja/coste": 0.06951311412239441
+      },
+      {
+        "q": "top 2-1 %",
+        "barras": 7764,
+        "ventaja_bruta": 0.04381714317716405,
+        "ventaja/coste": 0.0876342863543281
+      },
+      {
+        "q": "top 1 %",
+        "barras": 7764,
+        "ventaja_bruta": -0.051189512752338316,
+        "ventaja/coste": -0.10237902550467663
+      }
+    ],
+    "months": [
+      {
+        "month": "2024-01",
+        "trees": 28,
+        "ic": -0.023176154580261055,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-02",
+        "trees": 1,
+        "ic": 0.00871397998197964,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-03",
+        "trees": 5,
+        "ic": 0.006158914459587832,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-04",
+        "trees": 21,
+        "ic": 0.01726832462115778,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-05",
+        "trees": 28,
+        "ic": 0.005777682226554108,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-06",
+        "trees": 1,
+        "ic": 0.006100566101640751,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-07",
+        "trees": 6,
+        "ic": -0.03198083158480838,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-08",
+        "trees": 2,
+        "ic": 0.01770152977587142,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-09",
+        "trees": 18,
+        "ic": 0.007091814352449121,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-10",
+        "trees": 44,
+        "ic": -0.006823185161904881,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-11",
+        "trees": 3,
+        "ic": -0.0087192087173099,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2024-12",
+        "trees": 15,
+        "ic": -0.004706250827315085,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-01",
+        "trees": 1,
+        "ic": 0.03185871083114689,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-02",
+        "trees": 121,
+        "ic": 0.025343440676841043,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-03",
+        "trees": 32,
+        "ic": 0.009845334805798606,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-04",
+        "trees": 24,
+        "ic": -0.0030934490493120517,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-05",
+        "trees": 59,
+        "ic": 0.0014778434388131286,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-06",
+        "trees": 18,
+        "ic": -0.0198608527596742,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-07",
+        "trees": 6,
+        "ic": 0.017715473144221908,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-08",
+        "trees": 1,
+        "ic": 0.02078174017910233,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-09",
+        "trees": 2,
+        "ic": -0.00247959414767586,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-10",
+        "trees": 9,
+        "ic": 0.005973835018415067,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-11",
+        "trees": 2,
+        "ic": 0.02307294279133761,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2025-12",
+        "trees": 126,
+        "ic": -0.009939972002685987,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2026-01",
+        "trees": 17,
+        "ic": 0.005038894848659266,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2026-02",
+        "trees": 4,
+        "ic": 0.006133972199991604,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2026-03",
+        "trees": 75,
+        "ic": 0.01109644169369309,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      },
+      {
+        "month": "2026-04",
+        "trees": 3,
+        "ic": -0.012486760918327972,
+        "thr": Infinity,
+        "val_q": null,
+        "val_tstat": null,
+        "trades": 0,
+        "net": 0.0,
+        "gross": 0.0
+      }
+    ]
+  }
+}

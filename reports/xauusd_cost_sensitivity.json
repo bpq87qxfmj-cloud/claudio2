@@ -1,0 +1,57 @@
+[
+  {
+    "coste": "0x = 0",
+    "meses activos": "33/35",
+    "ops": 18083,
+    "acierto": 0.518,
+    "bruto/op": 0.08,
+    "neto/op": 0.08,
+    "neto total": 1449.4,
+    "t-stat": 3.3,
+    "max DD": 253.3
+  },
+  {
+    "coste": "0.25x = 0.075",
+    "meses activos": "23/35",
+    "ops": 6278,
+    "acierto": 0.516,
+    "bruto/op": 0.136,
+    "neto/op": 0.061,
+    "neto total": 382.3,
+    "t-stat": 1.03,
+    "max DD": 292.3
+  },
+  {
+    "coste": "0.5x = 0.15",
+    "meses activos": "20/35",
+    "ops": 4700,
+    "acierto": 0.506,
+    "bruto/op": 0.088,
+    "neto/op": -0.062,
+    "neto total": -291.0,
+    "t-stat": -0.89,
+    "max DD": 386.7
+  },
+  {
+    "coste": "1x = 0.3",
+    "meses activos": "11/35",
+    "ops": 1753,
+    "acierto": 0.505,
+    "bruto/op": 0.195,
+    "neto/op": -0.105,
+    "neto total": -184.0,
+    "t-stat": -1.1,
+    "max DD": 219.0
+  },
+  {
+    "coste": "2x = 0.6",
+    "meses activos": "1/35",
+    "ops": 40,
+    "acierto": 0.7,
+    "bruto/op": 1.556,
+    "neto/op": 0.956,
+    "neto total": 38.2,
+    "t-stat": 1.76,
+    "max DD": 16.3
+  }
+]
