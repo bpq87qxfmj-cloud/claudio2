@@ -78,8 +78,9 @@ class Agent:
         self.use_reference = use_reference
         self.persist = persist
         self.dir = Path(state_dir or STATE_DIR)
-        self.state_path = self.dir / f"{market}_state.json"
-        self.journal_path = self.dir / f"{market}_trades.csv"
+        kind = getattr(broker, "name", "broker")  # cada bróker lleva su propio estado y diario
+        self.state_path = self.dir / f"{market}_{kind}_state.json"
+        self.journal_path = self.dir / f"{market}_{kind}_trades.csv"
         self.stop_path = self.dir / "STOP"
         self.state = AgentState()
         self.closed: list[dict] = []

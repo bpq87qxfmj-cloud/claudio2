@@ -174,7 +174,7 @@ def test_state_survives_restart(tmp_path):
     assert a2.on_bar(T0 + pd.Timedelta(minutes=1), 100, 100.5, 99.5, 100, pred=1.0, width=5.0) == "barra ya procesada"
     a2.on_bar(T0 + pd.Timedelta(minutes=2), 100, 106, 99.5, 105, pred=0.0, width=5.0)
     assert a2.closed[-1]["reason"] == "tp" and a2.state.trades == 1
-    assert (tmp_path / "XAUUSD_trades.csv").read_text().count("\n") == 2
+    assert (tmp_path / "XAUUSD_paper_trades.csv").read_text().count("\n") == 2
 
 
 def test_live_loop_survives_feed_errors():

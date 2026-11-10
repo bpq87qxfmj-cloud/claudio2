@@ -72,7 +72,7 @@ la validación encontró ventaja neta y el sistema operó; el resto se queda fue
 | Modelo | `scalper/model.py` | LightGBM que estima el resultado esperado de un largo (negativo ⇒ corto). Umbral de entrada elegido en validación; si no hay ventaja neta, no opera |
 | Backtest | `scalper/backtest.py` | Una posición a la vez, coste de ida y vuelta en cada operación, sin operar a través de cierres de sesión |
 | Informe | `scalper/report.py` | Comparación de mercados, curvas y sensibilidad al coste |
-| Agente | `scalper/agent.py`, `scalper/brokers.py` | Bucle autónomo, gestión de riesgo, cuenta simulada y adaptador MetaTrader 5 |
+| Agente | `scalper/agent.py`, `scalper/brokers.py`, `scalper/capital.py` | Bucle autónomo, gestión de riesgo, cuenta simulada y adaptadores de Capital.com y MetaTrader 5 |
 
 Salvaguardas contra el autoengaño: purga de etiquetas solapadas entre entrenamiento, validación y
 test; parámetros fijados antes de mirar el test; seis meses finales reservados; tests que
@@ -103,14 +103,15 @@ inicial.
 | Caída máxima | 10 % desde el máximo | se detiene; hay que reanudarlo a mano con `--reset-halt` |
 | Monitor de ventaja | t < −2 en las últimas 100 operaciones | se suspende hasta reentrenar |
 | Cierre de sesión | 11 min antes del cierre diario | no abre operaciones que cruzarían el cierre |
-| Datos caducados / spread alto | 3 min / 80 % del coste asumido | no abre |
+| Datos caducados / spread alto | 3 min / spread por encima del coste indicado | no abre |
 | Parada manual | crear el archivo `state/STOP` | cierra la posición y termina |
 
 ```bash
 python -m scalper replay --market XAUUSD --start 2026-05        # el agente revive el histórico
 python -m scalper agent  --market XAUUSD                        # en vivo, cuenta simulada, datos de Yahoo
-python -m scalper agent  --market XAUUSD --broker paper --feed mt5   # simulado con datos reales del bróker
-python -m scalper agent  --market XAUUSD --broker mt5                # órdenes reales en MetaTrader 5 (demo)
+python -m scalper agent  --market XAUUSD --feed capital         # simulado con precios en tiempo real de Capital.com
+python -m scalper agent  --market XAUUSD --broker capital       # órdenes en la cuenta DEMO de Capital.com
+python -m scalper agent  --market XAUUSD --broker mt5           # órdenes en MetaTrader 5 (demo)
 ```
 
 **Qué habría hecho** con 10 000 $ en los meses reservados (may–nov 2026, reentrenando cada mes):
@@ -119,6 +120,47 @@ septiembre al alcanzar la caída máxima. Antes de eso se suspendió dos veces p
 ventaja y pasó 59 000 minutos fuera por no encontrar ventaja validada. Es coherente con el
 backtest: sin límites de riesgo el agente reproduce el walk-forward (1 390 operaciones y −211,7
 frente a 1 394 y −213,1; la diferencia son las entradas junto al cierre de sesión).
+
+### Capital.com
+
+`scalper/capital.py` conecta con la [API oficial de Capital.com](https://open-api.capital.com):
+barras de 1 minuto en tiempo real con bid y ask, y órdenes a mercado con TP y SL en el servidor.
+
+1. En Capital.com activa la verificación en dos pasos y genera una clave en
+   **Ajustes > Integraciones API** (se le pone una contraseña propia).
+2. Expórtalas como variables de entorno, sin escribirlas en ningún archivo del repositorio:
+
+   ```bash
+   export CAPITAL_API_KEY=...        # la clave generada
+   export CAPITAL_IDENTIFIER=...     # tu correo de Capital.com
+   export CAPITAL_PASSWORD=...       # la contraseña de la clave API, no la de la cuenta
+   ```
+3. Comprueba la conexión y mide tu spread real, que es el dato que decide todo:
+
+   ```bash
+   python -m scalper capital --market XAUUSD
+   ```
+4. Entrena con ese coste y deja al agente en la cuenta demo:
+
+   ```bash
+   python -m scalper train --market XAUUSD --cost <spread medido>
+   python -m scalper agent --market XAUUSD --broker capital --cost <spread medido>
+   ```
+
+Detalles del adaptador:
+
+- Usa siempre el servidor **demo** salvo que se pase `--allow-real`.
+- Capital.com no cobra comisión en CFD: el coste es el spread. El oro se anuncia con spread
+  desde 0,30, justo el coste supuesto en este proyecto, con el que el modelo no encuentra ventaja
+  neta. Si `capital` mide ese spread, lo esperable es que el agente se quede fuera.
+- El agente no entra si el spread del momento supera en un 25 % el coste indicado.
+- Las barreras del modelo están en precio bid: en los cortos se desplazan el spread porque se
+  cierran en ask.
+- El resultado de cada operación se toma de la variación del saldo, así que conviene una cuenta
+  (o subcuenta) dedicada: si operas a mano en la misma a la vez, las cifras se mezclan.
+- **Probado contra un doble de pruebas de la API documentada y contra las respuestas de error del
+  servidor demo real, pero no con una sesión autenticada**: no tengo tus credenciales. La primera
+  ejecución en demo es la prueba real.
 
 Modos de ejecución:
 

@@ -6,7 +6,8 @@
   train --market M         entrena el modelo final y lo guarda en models/
   predict --market M       señal para la próxima barra con datos recientes de Yahoo (o --csv)
   replay --market M        el agente autónomo revive un periodo histórico barra a barra
-  agent --market M         agente autónomo en vivo (simulado por defecto; --broker mt5 para MetaTrader 5)
+  agent --market M         agente autónomo en vivo (simulado por defecto; --broker capital | mt5)
+  capital --market M       comprueba la conexión con Capital.com y mide el spread real
 """
 from __future__ import annotations
 
@@ -138,16 +139,24 @@ def cmd_agent(a):
                         handlers=[logging.StreamHandler(), logging.FileHandler(pathlib.Path(state_dir) / f"{m}_agent.log")])
     log = logging.getLogger("scalper.agent")
     risk = _risk(a)
-    feed = a.feed or ("mt5" if a.broker == "mt5" else "yahoo")
-    if a.broker == "mt5" and feed != "mt5":
-        raise SystemExit("Con --broker mt5 los datos deben venir del propio bróker (--feed mt5).")
-    if a.broker == "mt5" and a.use_reference_threshold:
+    feed = a.feed or (a.broker if a.broker != "paper" else "yahoo")
+    if a.broker != "paper" and feed != a.broker:
+        raise SystemExit(f"Con --broker {a.broker} los datos deben venir del propio bróker (--feed {a.broker}).")
+    if a.broker != "paper" and a.use_reference_threshold:
         raise SystemExit("--use-reference-threshold solo se permite con el bróker simulado.")
 
-    mt5 = MT5Broker(mk, symbol=a.symbol, allow_real=a.allow_real or a.broker == "paper") if feed == "mt5" else None
-    broker = mt5 if a.broker == "mt5" else PaperBroker(a.equity, cost)
+    live = None
     if feed == "mt5":
-        fetch = lambda: mt5.bars(2500)
+        live = MT5Broker(mk, symbol=a.symbol, allow_real=a.allow_real or a.broker == "paper")
+    elif feed == "capital":
+        from .capital import CapitalBroker, CapitalClient
+
+        # Con el bróker simulado solo se leen precios, así que basta la cuenta demo.
+        live = CapitalBroker(mk, CapitalClient.from_env(demo=not (a.allow_real and a.broker == "capital")), epic=a.symbol)
+        risk = dataclasses.replace(risk, max_spread_cost=1.25)  # aquí el coste es el propio spread
+    broker = live if a.broker in ("mt5", "capital") else PaperBroker(a.equity, cost)
+    if live is not None:
+        fetch = lambda: live.bars(2500)
     elif feed == "csv":
         fetch = lambda: load_csv(a.csv, tz=a.tz).iloc[-2500:]
     else:
@@ -175,6 +184,28 @@ def cmd_agent(a):
     except KeyboardInterrupt:
         log.info("Interrumpido por el usuario. Las posiciones abiertas conservan su TP/SL.")
     _print_summary(agent, a.equity if a.broker == "paper" else broker.equity())
+
+
+def cmd_capital(a):
+    from .capital import CapitalBroker, CapitalClient
+
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    m = a.markets[0]
+    mk = MARKETS[m]
+    client = CapitalClient.from_env(demo=not a.allow_real)
+    br = CapitalBroker(mk, client, epic=a.symbol)
+    info = client.market(br.epic)
+    snap, rules = info["snapshot"], info["dealingRules"]
+    print(f"cuenta {'DEMO' if client.demo else 'REAL'}  capital={client.balance():,.2f}")
+    print(f"{br.epic}: bid={snap['bid']} ask={snap['offer']} spread ahora={float(snap['offer']) - float(snap['bid']):.3f}")
+    print(f"tamaño mínimo={rules['minDealSize']['value']}  incremento={rules['minSizeIncrement']['value']}  "
+          f"distancia mínima de stop={rules.get('minStopOrProfitDistance')}")
+    stats = br.spread_stats(a.bars)
+    print(f"\nspread por hora de Nueva York (últimas {int(stats['count'].sum())} barras de 1 min):")
+    print(stats.round(3).to_string())
+    med = float(br._cache["spread"].median())
+    print(f"\nspread mediano = {med:.3f}   coste supuesto en este proyecto = {mk.cost:g}")
+    print(f"Para que el agente decida con tu coste real:  python -m scalper train --market {m} --cost {med:.2f}")
 
 
 def main():
@@ -214,18 +245,31 @@ def main():
             sp.add_argument("--end", help="mes final exclusivo, YYYY-MM")
             sp.add_argument("--verbose", action="store_true")
         else:
-            sp.add_argument("--broker", choices=["paper", "mt5"], default="paper")
-            sp.add_argument("--feed", choices=["yahoo", "csv", "mt5"], help="origen de las barras (por defecto yahoo, o mt5 con --broker mt5)")
+            sp.add_argument("--broker", choices=["paper", "capital", "mt5"], default="paper")
+            sp.add_argument("--feed", choices=["yahoo", "csv", "capital", "mt5"],
+                            help="origen de las barras (por defecto yahoo, o el del bróker elegido)")
             sp.add_argument("--csv", help="CSV de barras M1 que otro proceso mantiene actualizado")
             sp.add_argument("--tz", default="UTC")
-            sp.add_argument("--symbol", help="nombre del símbolo en el bróker si difiere (p. ej. XAUUSD.m)")
-            sp.add_argument("--allow-real", action="store_true", help="permitir cuenta real en MT5 (por defecto solo demo)")
+            sp.add_argument("--symbol", help="símbolo o epic en el bróker si difiere (Capital.com: GOLD, US100, US500)")
+            sp.add_argument("--allow-real", action="store_true", help="operar en la cuenta real (por defecto solo demo)")
             sp.add_argument("--retrain-days", type=float, default=7.0)
             sp.add_argument("--max-steps", type=int, help="nº de ciclos antes de salir (para pruebas)")
             sp.add_argument("--state-dir")
             sp.add_argument("--reset-halt", action="store_true", help="levantar una parada por caída máxima")
+    sp = add("capital", cmd_capital, default=["XAUUSD"])
+    sp.add_argument("--symbol", help="epic si difiere (GOLD, US100, US500)")
+    sp.add_argument("--bars", type=int, default=3000, help="barras de 1 min para medir el spread")
+    sp.add_argument("--allow-real", action="store_true", help="usar la cuenta real en lugar de la demo")
     a = ap.parse_args()
-    a.fn(a)
+    try:
+        a.fn(a)
+    except Exception as e:
+        if type(e).__name__ != "CapitalError":
+            raise
+        hints = {"error.invalid.api.key": "la clave API no es válida para este servidor (¿clave de demo/real cambiada?)",
+                 "error.invalid.details": "correo o contraseña de la clave API incorrectos",
+                 "error.too-many.requests": "demasiadas peticiones; espera unos segundos"}
+        raise SystemExit(f"Capital.com rechazó la petición: {e.code} ({hints.get(e.code, 'consulta open-api.capital.com')})")
 
 
 if __name__ == "__main__":

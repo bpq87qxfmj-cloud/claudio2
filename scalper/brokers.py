@@ -2,6 +2,7 @@
 
   * PaperBroker -> simulación (por defecto). Reproduce exactamente las reglas del backtest.
   * MT5Broker   -> MetaTrader 5 (solo Windows, requiere el paquete MetaTrader5 y un terminal abierto).
+  * CapitalBroker (scalper/capital.py) -> API REST de Capital.com.
 
 Interfaz común que usa el agente:
     equity() -> float                 capital actual de la cuenta
@@ -45,7 +46,7 @@ class Position:
     signal_time: pd.Timestamp
     pred: float = 0.0
     bars_held: int = 0
-    ticket: int | None = None
+    ticket: int | str | None = None
 
 
 def closed_trade(pos: Position, t, exit_price: float, cost: float, reason: str, net_money: float | None = None) -> dict:
@@ -60,6 +61,8 @@ def closed_trade(pos: Position, t, exit_price: float, cost: float, reason: str, 
 
 class PaperBroker:
     """Cuenta simulada. La orden se ejecuta en la apertura de la barra siguiente a la señal."""
+
+    name = "paper"
 
     def __init__(self, equity: float, cost: float):
         self._equity = float(equity)
@@ -139,6 +142,7 @@ class MT5Broker:
     """
 
     MAGIC = 20261110
+    name = "mt5"
 
     def __init__(self, market: Market, symbol: str | None = None, allow_real: bool = False,
                  deviation: int = 20, mt5=None):
