@@ -17,7 +17,7 @@ import pandas as pd
 from . import backtest
 from .config import MARKETS, MODEL_DIR, Params
 from .features import FEATURE_WARMUP, build_features
-from .labels import Outcomes, simulate
+from .labels import Outcomes, barrier_width, simulate
 
 
 def prepare(df: pd.DataFrame, p: Params) -> tuple[pd.DataFrame, Outcomes]:
@@ -108,8 +108,8 @@ def walk_forward(df: pd.DataFrame, cost: float, p: Params, start: str | None = N
 
 
 # ----------------------------------------------------------------------------- modelo final / en vivo
-def train_final(market: str, df: pd.DataFrame, cost: float, p: Params) -> dict:
-    """Entrena con los últimos `train_months` meses disponibles y guarda modelo + metadatos."""
+def fit_final(market: str, df: pd.DataFrame, cost: float, p: Params) -> tuple[lgb.Booster, dict]:
+    """Entrena con los últimos `train_months` meses de `df` y elige el umbral en su cola."""
     X, out = prepare(df, p)
     months = df.index.tz_localize(None).to_period("M")
     lo = max(int(np.searchsorted(months, months.max() + 1 - p.train_months)), FEATURE_WARMUP)
@@ -117,46 +117,74 @@ def train_final(market: str, df: pd.DataFrame, cost: float, p: Params) -> dict:
     pred = np.full(len(df), np.nan)
     pred[v_lo:v_hi] = model.predict(X.iloc[v_lo:v_hi])
     thr, vst = pick_threshold(df.index, pred, out, v_lo, v_hi, cost, p)
-    absval = np.abs(pred[v_lo:v_hi])
     meta = dict(
         market=market, cost=cost, threshold=thr if np.isfinite(thr) else None,
         # umbral de referencia (top 2 %) por si la validación no encontró ventaja neta
-        reference_threshold=float(np.nanquantile(absval, 0.98)),
+        reference_threshold=float(np.nanquantile(np.abs(pred[v_lo:v_hi]), 0.98)),
         val_stats=vst, features=list(X.columns), trained_until=str(df.index[-1]),
         train_from=str(df.index[lo]), trees=int(model.best_iteration_),
         params={k: v for k, v in asdict(p).items() if k != "lgbm"},
     )
+    return model.booster_, meta
+
+
+def train_final(market: str, df: pd.DataFrame, cost: float, p: Params) -> dict:
+    """Como fit_final, pero guarda modelo y metadatos en models/."""
+    booster, meta = fit_final(market, df, cost, p)
     MODEL_DIR.mkdir(exist_ok=True)
-    model.booster_.save_model(MODEL_DIR / f"{market}.txt", num_iteration=model.best_iteration_)
+    booster.save_model(MODEL_DIR / f"{market}.txt", num_iteration=meta["trees"])
     (MODEL_DIR / f"{market}.json").write_text(json.dumps(meta, indent=2))
     return meta
 
 
-def load_final(market: str) -> tuple[lgb.Booster, dict]:
-    meta = json.loads((MODEL_DIR / f"{market}.json").read_text())
-    return lgb.Booster(model_file=str(MODEL_DIR / f"{market}.txt")), meta
+class Predictor:
+    """Modelo entrenado + metadatos; convierte barras M1 en predicción y señal."""
+
+    def __init__(self, booster: lgb.Booster, meta: dict):
+        self.booster, self.meta = booster, meta
+        self.market = meta["market"]
+        self.params = Params(**{k: tuple(v) if isinstance(v, list) else v for k, v in meta["params"].items()})
+        self.threshold = meta["threshold"]  # None => la validación no encontró ventaja neta
+
+    @classmethod
+    def load(cls, market: str) -> "Predictor":
+        meta = json.loads((MODEL_DIR / f"{market}.json").read_text())
+        return cls(lgb.Booster(model_file=str(MODEL_DIR / f"{market}.txt")), meta)
+
+    def batch(self, df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+        """Predicción y anchura de barrera para todas las barras de `df`."""
+        X = build_features(df)[self.meta["features"]]
+        return self.booster.predict(X, num_iteration=self.meta["trees"]), barrier_width(df, self.params)
+
+    def last(self, df: pd.DataFrame) -> tuple[float, float]:
+        """Predicción y anchura de barrera de la última barra (necesita >= ~1500 barras previas)."""
+        X = build_features(df)[self.meta["features"]]
+        pred = float(self.booster.predict(X.iloc[[-1]], num_iteration=self.meta["trees"])[0])
+        return pred, float(barrier_width(df, self.params)[-1])
+
+    def side(self, pred: float, width: float, cost: float, use_reference: bool = False) -> int:
+        thr = self.threshold if self.threshold is not None else (self.meta["reference_threshold"] if use_reference else None)
+        if thr is None or not np.isfinite(pred) or not np.isfinite(width):
+            return 0
+        if abs(pred) < thr or width < self.params.min_width_cost * cost:
+            return 0
+        return int(np.sign(pred))
 
 
 def live_signal(market: str, df: pd.DataFrame, cost: float | None = None) -> dict:
-    """Señal para la próxima barra a partir de las barras M1 más recientes (>= ~500)."""
-    booster, meta = load_final(market)
-    p = Params(**{k: tuple(v) if isinstance(v, list) else v for k, v in meta["params"].items()})
+    """Señal para la próxima barra a partir de las barras M1 más recientes."""
+    pr = Predictor.load(market)
     cost = MARKETS[market].cost if cost is None else cost
-    X = build_features(df)[meta["features"]]
-    from .labels import barrier_width
-
-    width = float(barrier_width(df, p)[-1])
-    pred = float(booster.predict(X.iloc[[-1]])[0])
-    thr = meta["threshold"]
+    pred, width = pr.last(df)
+    side = pr.side(pred, width, cost)
     last = float(df["close"].iloc[-1])
-    active = thr is not None and abs(pred) >= thr and width >= p.min_width_cost * cost
-    side = int(np.sign(pred)) if active else 0
+    ref = pr.meta["reference_threshold"]
     return dict(
-        market=market, bar_time=str(df.index[-1]), close=last, prediction=pred, threshold=thr,
-        reference_threshold=meta["reference_threshold"], side=side,
+        market=market, bar_time=str(df.index[-1]), close=last, prediction=pred, threshold=pr.threshold,
+        reference_threshold=ref, side=side,
         action={1: "COMPRAR", -1: "VENDER", 0: "ESPERAR"}[side],
         take_profit=last + side * width if side else None,
         stop_loss=last - side * width if side else None,
-        barrier=width, max_minutes=p.horizon, expected_gross=pred * width, cost=cost,
-        bias={1: "alcista", -1: "bajista", 0: "neutral"}[int(np.sign(pred)) if abs(pred) >= meta["reference_threshold"] else 0],
+        barrier=width, max_minutes=pr.params.horizon, expected_gross=pred * width, cost=cost,
+        bias={1: "alcista", -1: "bajista", 0: "neutral"}[int(np.sign(pred)) if abs(pred) >= ref else 0],
     )

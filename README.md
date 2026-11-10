@@ -2,7 +2,8 @@
 
 Sistema completo para predecir el movimiento de los próximos 10 minutos y convertirlo en una
 señal de scalping (COMPRAR / VENDER / ESPERAR con TP, SL y salida por tiempo), validado fuera de
-muestra con costes de operación.
+muestra con costes de operación. Incluye un agente autónomo que opera solo (en simulación por
+defecto), gestiona el riesgo, se reentrena y se detiene por sí mismo cuando pierde.
 
 ## Conclusión en corto
 
@@ -71,6 +72,7 @@ la validación encontró ventaja neta y el sistema operó; el resto se queda fue
 | Modelo | `scalper/model.py` | LightGBM que estima el resultado esperado de un largo (negativo ⇒ corto). Umbral de entrada elegido en validación; si no hay ventaja neta, no opera |
 | Backtest | `scalper/backtest.py` | Una posición a la vez, coste de ida y vuelta en cada operación, sin operar a través de cierres de sesión |
 | Informe | `scalper/report.py` | Comparación de mercados, curvas y sensibilidad al coste |
+| Agente | `scalper/agent.py`, `scalper/brokers.py` | Bucle autónomo, gestión de riesgo, cuenta simulada y adaptador MetaTrader 5 |
 
 Salvaguardas contra el autoengaño: purga de etiquetas solapadas entre entrenamiento, validación y
 test; parámetros fijados antes de mirar el test; seis meses finales reservados; tests que
@@ -80,6 +82,52 @@ También se probaron, solo sobre el periodo de diseño, horizontes de 5/20/30/60
 regularizado, 24 meses de entrenamiento y variables de otros mercados (plata, EURUSD, USDJPY para
 el oro; S&P para el Nasdaq). Ninguna cambió la conclusión, así que se mantuvo la configuración
 inicial.
+
+## Agente autónomo
+
+`scalper/agent.py` convierte el predictor en un agente que opera solo, minuto a minuto:
+
+1. Lee las barras cerradas, actualiza la posición abierta y registra las operaciones cerradas.
+2. Comprueba los límites de riesgo; si alguno salta, no abre nada.
+3. Pide la predicción al modelo y, si supera el umbral validado, abre una operación con TP, SL
+   y caducidad a los 10 minutos, dimensionada para arriesgar un 0,25 % del capital.
+4. Guarda su estado en `state/` (reanuda tras un reinicio) y un diario de operaciones en CSV.
+5. Se reentrena cada 7 días con datos nuevos. Si la validación no encuentra ventaja neta, se
+   queda fuera hasta el siguiente reentrenamiento.
+
+| control | valor por defecto | efecto |
+|---|---|---|
+| Riesgo por operación | 0,25 % del capital | tamaño = riesgo / distancia al stop, redondeado al lote |
+| Pérdida diaria máxima | 2 % | deja de abrir hasta la jornada siguiente (17:00 Nueva York) |
+| Rachas | 5 pérdidas seguidas | pausa de 60 minutos |
+| Caída máxima | 10 % desde el máximo | se detiene; hay que reanudarlo a mano con `--reset-halt` |
+| Monitor de ventaja | t < −2 en las últimas 100 operaciones | se suspende hasta reentrenar |
+| Cierre de sesión | 11 min antes del cierre diario | no abre operaciones que cruzarían el cierre |
+| Datos caducados / spread alto | 3 min / 80 % del coste asumido | no abre |
+| Parada manual | crear el archivo `state/STOP` | cierra la posición y termina |
+
+```bash
+python -m scalper replay --market XAUUSD --start 2026-05        # el agente revive el histórico
+python -m scalper agent  --market XAUUSD                        # en vivo, cuenta simulada, datos de Yahoo
+python -m scalper agent  --market XAUUSD --broker paper --feed mt5   # simulado con datos reales del bróker
+python -m scalper agent  --market XAUUSD --broker mt5                # órdenes reales en MetaTrader 5 (demo)
+```
+
+**Qué habría hecho** con 10 000 $ en los meses reservados (may–nov 2026, reentrenando cada mes):
+892 operaciones, 49,8 % de acierto, capital 10 000 → 9 002 $ (**−10 %**), y se detuvo solo en
+septiembre al alcanzar la caída máxima. Antes de eso se suspendió dos veces por el monitor de
+ventaja y pasó 59 000 minutos fuera por no encontrar ventaja validada. Es coherente con el
+backtest: sin límites de riesgo el agente reproduce el walk-forward (1 390 operaciones y −211,7
+frente a 1 394 y −213,1; la diferencia son las entradas junto al cierre de sesión).
+
+Modos de ejecución:
+
+- **Simulado (por defecto):** las órdenes se ejecutan en la apertura de la barra siguiente con
+  las mismas reglas que el backtest (hay un test que exige resultados idénticos).
+- **MetaTrader 5 (`--broker mt5`):** envía órdenes reales con TP/SL en el servidor. Solo funciona
+  en Windows con el terminal abierto y el paquete `MetaTrader5`. Se niega a operar en una cuenta
+  que no sea demo salvo que se pase `--allow-real`. **Este adaptador solo se ha probado contra un
+  doble de pruebas, no contra un terminal real**: hay que validarlo en demo antes de nada.
 
 ## Uso
 

@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 MODEL_DIR = ROOT / "models"
 REPORT_DIR = ROOT / "reports"
+STATE_DIR = ROOT / "state"
 
 
 @dataclass(frozen=True)
@@ -17,14 +18,18 @@ class Market:
     histdata: str  # código del par en histdata.com (histórico M1, cotización bid)
     yahoo: str  # ticker de Yahoo Finance para datos recientes / señal en vivo
     cost: float  # coste ida y vuelta en unidades de precio: spread + comisión + deslizamiento
+    lot_size: float = 1.0  # unidades del subyacente por lote (oro: 100 oz)
+    lot_step: float = 0.01  # incremento mínimo de volumen, en lotes
+    min_lot: float = 0.01
+    break_ny: int = 17 * 60  # minuto del día (hora de Nueva York) en que empieza el cierre diario
 
 
 # Costes ida y vuelta típicos de una cuenta minorista ECN / micro-futuros.
 # Son supuestos: ajústalos a tu bróker con --cost.
 MARKETS: dict[str, Market] = {
-    "XAUUSD": Market("XAUUSD", "Oro spot (XAU/USD)", "XAUUSD", "GC=F", 0.30),
-    "NAS100": Market("NAS100", "Nasdaq-100", "NSXUSD", "NQ=F", 1.00),
-    "SPX500": Market("SPX500", "S&P 500", "SPXUSD", "ES=F", 0.50),
+    "XAUUSD": Market("XAUUSD", "Oro spot (XAU/USD)", "XAUUSD", "GC=F", 0.30, lot_size=100.0),
+    "NAS100": Market("NAS100", "Nasdaq-100", "NSXUSD", "NQ=F", 1.00, lot_step=0.1, min_lot=0.1, break_ny=16 * 60 + 15),
+    "SPX500": Market("SPX500", "S&P 500", "SPXUSD", "ES=F", 0.50, lot_step=0.1, min_lot=0.1, break_ny=16 * 60 + 15),
 }
 
 

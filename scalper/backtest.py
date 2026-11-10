@@ -25,7 +25,7 @@ def run(index: pd.DatetimeIndex, signal: np.ndarray, out: Outcomes, cost: float,
             continue
         k = int(out.long_exit[i] if s > 0 else out.short_exit[i])
         rows.append((index[i], int(s), out.entry[i], out.width[i], k, gross, gross - cost))
-        free = i + k + 1  # la siguiente señal válida es la del cierre de la barra de salida
+        free = i + k + 1  # tras salir en la barra i+k se espera una barra antes de aceptar otra señal
     return pd.DataFrame(rows, columns=["time", "side", "entry", "width", "bars", "gross", "net"])
 
 
