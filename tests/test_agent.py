@@ -24,6 +24,7 @@ class StubPredictor:
         self.threshold = threshold
         self.params = dataclasses.replace(PARAMS, horizon=horizon)
         self.meta = dict(trained_until="-", reference_threshold=0.5, features=[], trees=0)
+        self.candidate_threshold = 0.5
 
     def side(self, pred, width, cost, use_reference=False):
         thr = self.threshold if self.threshold is not None else (0.5 if use_reference else None)

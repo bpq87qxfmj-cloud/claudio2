@@ -23,6 +23,7 @@ from .brokers import Order, PaperBroker, round_lots
 from .config import MARKETS, STATE_DIR, Market, Params
 from .features import FEATURE_WARMUP, build_features
 from .labels import barrier_width
+from .learning import FROM_FEATURES, LearnConfig, Learner
 
 log = logging.getLogger("scalper.agent")
 JOURNAL_COLS = ["time", "entry_time", "exit_time", "side", "units", "entry", "exit", "width", "bars", "pred",
@@ -70,7 +71,7 @@ def trading_day(t: pd.Timestamp) -> str:
 class Agent:
     def __init__(self, market: str, broker, predictor: model.Predictor, risk: RiskConfig | None = None,
                  cost: float | None = None, state_dir: Path | None = None, use_reference: bool = False,
-                 persist: bool = True):
+                 persist: bool = True, learn: LearnConfig | None = None):
         self.mk: Market = MARKETS[market]
         self.broker, self.predictor = broker, predictor
         self.risk = risk or RiskConfig()
@@ -90,6 +91,11 @@ class Agent:
             self._load_state()
         if not self.state.peak_equity:
             self.state.peak_equity = self.broker.equity()
+        # Aprendizaje de errores (opcional): memoria de señales candidatas y crítico.
+        self.learner: Learner | None = None
+        if learn is not None:
+            exp_path = self.dir / f"{market}_{kind}_experience.csv" if persist else None
+            self.learner = Learner(self.cost, predictor.params.horizon, learn, exp_path)
 
     # ------------------------------------------------------------------ persistencia
     def _load_state(self) -> None:
@@ -124,6 +130,9 @@ class Agent:
         if day != self.state.day:
             self.state.day, self.state.day_pnl, self.state.day_trades = day, 0.0, 0
             self.state.day_start_equity = self.broker.equity()
+            if self.learner is not None and self.learner.refit_due():
+                self.learner.refit()
+                log.info("Crítico reajustado con %d experiencias", len(self.learner.y))
 
     def _record(self, tr: dict, t: pd.Timestamp) -> None:
         st, r = self.state, self.risk
@@ -155,14 +164,14 @@ class Agent:
                 log.warning("Suspendido: las últimas %d operaciones (media %+.3f) contradicen la ventaja estimada. "
                             "Se reanudará tras reentrenar.", len(x), x.mean())
 
-    def blocked(self, t: pd.Timestamp, now: pd.Timestamp | None = None) -> str | None:
+    def blocked(self, t: pd.Timestamp, now: pd.Timestamp | None = None, allow_unvalidated: bool = False) -> str | None:
         """Motivo por el que no se puede abrir una operación ahora (None si se puede)."""
         st, r = self.state, self.risk
         if st.halted:
             return "detenido"
         if st.suspended:
             return "suspendido por el monitor de ventaja"
-        if self.predictor.threshold is None and not self.use_reference:
+        if self.predictor.threshold is None and not self.use_reference and not allow_unvalidated:
             return "sin ventaja validada"
         if st.paused_until and t < pd.Timestamp(st.paused_until):
             return "en pausa"
@@ -170,9 +179,7 @@ class Agent:
             return "límite de pérdida diaria"
         if st.day_trades >= r.max_trades_per_day:
             return "máximo de operaciones diarias"
-        ny = t.tz_convert("America/New_York")
-        to_break = self.mk.break_ny - (ny.hour * 60 + ny.minute)
-        if 0 <= to_break <= self.predictor.params.horizon + 1 or (ny.dayofweek == 5):
+        if self._near_close(t):
             return "cierre de sesión próximo"
         if now is not None and (now - t).total_seconds() / 60 > r.max_bar_age_min + 1:
             return "datos caducados"
@@ -180,6 +187,23 @@ class Agent:
         if sp is not None and sp > r.max_spread_cost * self.cost:
             return "spread demasiado alto"
         return None
+
+    def _near_close(self, t: pd.Timestamp) -> bool:
+        ny = t.tz_convert("America/New_York")
+        to_break = self.mk.break_ny - (ny.hour * 60 + ny.minute)
+        return 0 <= to_break <= self.predictor.params.horizon + 1 or ny.dayofweek == 5
+
+    def _observe(self, t: pd.Timestamp, pred: float, width: float, ctx) -> tuple[int, float | None]:
+        """Si la barra es una señal candidata, la apunta en la memoria y pide opinión al crítico."""
+        if self.learner is None or ctx is None or not (np.isfinite(pred) and np.isfinite(width)):
+            return 0, None
+        thr = self.predictor.candidate_threshold
+        if self.predictor.threshold is not None:
+            thr = min(thr, self.predictor.threshold)  # toda señal operable es también candidata
+        if abs(pred) < thr or width < self.predictor.params.min_width_cost * self.cost or self._near_close(t):
+            return 0, None
+        side = int(np.sign(pred))
+        return side, self.learner.observe(t, side, pred, width, self.predictor.candidate_threshold, ctx)
 
     def size(self, width: float) -> float:
         """Unidades de subyacente, redondeadas al lote, para arriesgar `risk_per_trade` del capital."""
@@ -190,8 +214,11 @@ class Agent:
 
     # ------------------------------------------------------------------ ciclo
     def on_bar(self, t: pd.Timestamp, o: float, h: float, l: float, c: float, pred: float, width: float,
-               now: pd.Timestamp | None = None) -> str:
-        """Procesa una barra cerrada. Devuelve lo que hizo (para el registro)."""
+               now: pd.Timestamp | None = None, ctx=None) -> str:
+        """Procesa una barra cerrada. Devuelve lo que hizo (para el registro).
+
+        `ctx` son las variables FROM_FEATURES de la barra; sin ellas no se aprende de esta barra.
+        """
         st = self.state
         if st.last_bar is not None and t <= pd.Timestamp(st.last_bar):
             return "barra ya procesada"
@@ -199,12 +226,14 @@ class Agent:
         closed = self.broker.on_bar(t, o, h, l, c)
         for tr in closed:
             self._record(tr, t)
+        if self.learner is not None:
+            self.learner.on_bar(t, o, h, l, c)
         st.last_bar = str(t)
-        action = self._decide(t, c, pred, width, now, just_closed=bool(closed))
+        action = self._decide(t, c, pred, width, now, just_closed=bool(closed), ctx=ctx)
         self._save_state()
         return action
 
-    def _decide(self, t, c, pred, width, now, just_closed: bool) -> str:
+    def _decide(self, t, c, pred, width, now, just_closed: bool, ctx=None) -> str:
         if self.stop_path.exists():
             for tr in self.broker.close_all(t, c, "parada manual"):
                 self._record(tr, t)
@@ -213,23 +242,34 @@ class Agent:
         if self.state.halted and not self.broker.flat():
             for tr in self.broker.close_all(t, c, "agente detenido"):
                 self._record(tr, t)
+        cand_side, score = self._observe(t, pred, width, ctx)  # se aprende aunque no se pueda operar
         if not self.broker.flat():
             return "en posición"
         if just_closed:
             return "espera tras cierre"
-        reason = self.blocked(t, now)
+        side = self.predictor.side(pred, width, self.cost, self.use_reference)
+        learned = False
+        if (side == 0 and cand_side and self.learner.cfg.learn_entries and score is not None and score > 0
+                and self.learner.track_ok()):
+            side, learned = cand_side, True  # el modelo base no la operaría; la experiencia sí
+        reason = self.blocked(t, now, allow_unvalidated=learned)
         if reason:
             self.skips[reason] = self.skips.get(reason, 0) + 1
             return reason
-        side = self.predictor.side(pred, width, self.cost, self.use_reference)
         if side == 0:
             return "sin señal"
+        if not learned and score is not None and score <= 0:
+            self.learner.vetoes += 1
+            self.skips["vetada por el crítico"] = self.skips.get("vetada por el crítico", 0) + 1
+            return "vetada por el crítico"
         units = self.size(width)
         if units <= 0:
             self.skips["tamaño mínimo excede el riesgo"] = self.skips.get("tamaño mínimo excede el riesgo", 0) + 1
             return "tamaño mínimo excede el riesgo"
         if not self.broker.submit(Order(side, units, width, self.predictor.params.horizon, t, pred)):
             return "orden no aceptada"
+        if learned:
+            self.learner.learned_entries += 1
         log.info("ORDEN %s %.2f uds  cierre=%.2f  TP/SL=±%.2f  pred=%+.4f  máx %d min",
                  "COMPRA" if side > 0 else "VENTA", units, c, width, pred, self.predictor.params.horizon)
         return "COMPRA" if side > 0 else "VENTA"
@@ -239,12 +279,16 @@ class Agent:
         t = bars.index[-1]
         if self.state.last_bar is not None and t <= pd.Timestamp(self.state.last_bar):
             return "barra ya procesada"
+        ctx = None
         if len(bars) < FEATURE_WARMUP + 200:
             pred, width = np.nan, np.nan
+        elif self.learner is not None:
+            pred, width, row = self.predictor.last_full(bars)
+            ctx = row[FROM_FEATURES].to_numpy(float)
         else:
             pred, width = self.predictor.last(bars)
         b = bars.iloc[-1]
-        return self.on_bar(t, b.open, b.high, b.low, b.close, pred, width, now)
+        return self.on_bar(t, b.open, b.high, b.low, b.close, pred, width, now, ctx=ctx)
 
     def set_predictor(self, predictor: model.Predictor, when: pd.Timestamp) -> None:
         """Sustituye el modelo (tras reentrenar) y levanta la suspensión del monitor de ventaja."""
@@ -260,14 +304,16 @@ class Agent:
         trades = pd.DataFrame(self.closed, columns=[c for c in JOURNAL_COLS]) if self.closed else pd.DataFrame(columns=JOURNAL_COLS)
         st = backtest.stats(trades)
         st.update(equity=self.broker.equity(), money=float(trades["net_money"].sum()) if len(trades) else 0.0,
-                  halted=self.state.halted, suspended=self.state.suspended, skips=dict(self.skips))
+                  halted=self.state.halted, suspended=self.state.suspended, skips=dict(self.skips),
+                  learning=self.learner.summary() if self.learner is not None else None)
         return st
 
 
 # ---------------------------------------------------------------------- repetición histórica
 def replay(market: str, df: pd.DataFrame, start: str, end: str | None = None, equity: float = 10_000.0,
            cost: float | None = None, risk: RiskConfig | None = None, p: Params | None = None,
-           retrain: bool = True, use_reference: bool = False, predictor: model.Predictor | None = None) -> Agent:
+           retrain: bool = True, use_reference: bool = False, predictor: model.Predictor | None = None,
+           learn: LearnConfig | None = None) -> Agent:
     """Hace vivir al agente el periodo [start, end) barra a barra sobre el histórico.
 
     Con `retrain`, el agente se reentrena al empezar cada mes usando solo los datos anteriores,
@@ -280,6 +326,7 @@ def replay(market: str, df: pd.DataFrame, start: str, end: str | None = None, eq
     months = df.index.tz_localize(None).to_period("M")
     first, last = pd.Period(start, "M"), (pd.Period(end, "M") if end else months.max() + 1)
     X = build_features(df)
+    F = X[FROM_FEATURES].to_numpy(float) if learn is not None else None
     width = barrier_width(df, p)
     o, h, l, c = (df[k].to_numpy(float) for k in ("open", "high", "low", "close"))
     agent: Agent | None = None
@@ -291,14 +338,15 @@ def replay(market: str, df: pd.DataFrame, start: str, end: str | None = None, eq
         if retrain or predictor is None:
             predictor = model.Predictor(*model.fit_final(market, df.iloc[:lo], cost, p))
         if agent is None:
-            agent = Agent(market, PaperBroker(equity, cost), predictor, risk, cost, use_reference=use_reference, persist=False)
+            agent = Agent(market, PaperBroker(equity, cost), predictor, risk, cost, use_reference=use_reference,
+                          persist=False, learn=learn)
         if retrain:
             agent.set_predictor(predictor, df.index[lo])
         pred = predictor.booster.predict(X.iloc[lo:hi][predictor.meta["features"]], num_iteration=predictor.meta["trees"])
         idx = df.index[lo:hi]
         for j in range(hi - lo):
             i = lo + j
-            agent.on_bar(idx[j], o[i], h[i], l[i], c[i], pred[j], width[i])
+            agent.on_bar(idx[j], o[i], h[i], l[i], c[i], pred[j], width[i], ctx=None if F is None else F[i])
     if agent is None:
         raise ValueError("No hay datos en el periodo pedido")
     return agent

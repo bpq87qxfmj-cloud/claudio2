@@ -96,6 +96,12 @@ def _risk(a):
                       max_trades_per_day=a.max_trades_per_day)
 
 
+def _learn(a):
+    from .learning import LearnConfig
+
+    return None if a.no_learning else LearnConfig(learn_entries=a.learn_entries)
+
+
 def _print_summary(agent, equity0: float):
     s = agent.summary()
     print(f"\noperaciones={s['trades']}  acierto={s['win_rate']:.1%}  neto/op={s['net_avg']:+.3f}  t={s['tstat']:+.2f}"
@@ -105,6 +111,14 @@ def _print_summary(agent, equity0: float):
         print(f"DETENIDO: {s['halted']}")
     if s["skips"]:
         print("barras sin operar por motivo:", s["skips"])
+    L = s.get("learning")
+    if L:
+        fmt = lambda x: "–" if x[1] is None else f"{x[0]} señales, neto medio {x[1]:+.3f}"
+        print(f"\naprendizaje: {L['experiencias']} experiencias, crítico {'activo' if L['critico_activo'] else 'aún sin datos suficientes'}, "
+              f"{L['vetos']} operaciones vetadas, {L['entradas_aprendidas']} entradas aprendidas")
+        print(f"  lo que el crítico aprobó: {fmt(L['aprobadas'])}   lo que rechazó: {fmt(L['rechazadas'])}")
+        if L["lecciones"]:
+            print("  qué pesa más en su juicio:", ", ".join(f"{k} {v:.0%}" for k, v in L["lecciones"]))
 
 
 def cmd_replay(a):
@@ -113,7 +127,7 @@ def cmd_replay(a):
     logging.basicConfig(level=logging.INFO if a.verbose else logging.WARNING, format="%(message)s")
     m = a.markets[0]
     agent = ag.replay(m, load_history(m), a.start, a.end, equity=a.equity, cost=a.cost, risk=_risk(a),
-                      retrain=not a.no_retrain, use_reference=a.use_reference_threshold)
+                      retrain=not a.no_retrain, use_reference=a.use_reference_threshold, learn=_learn(a))
     _print_summary(agent, a.equity)
     if agent.closed:
         tr = pd.DataFrame(agent.closed)
@@ -169,7 +183,7 @@ def cmd_agent(a):
         return model.Predictor.load(m)
 
     agent = ag.Agent(m, broker, model.Predictor.load(m), risk, cost, state_dir=state_dir,
-                     use_reference=a.use_reference_threshold)
+                     use_reference=a.use_reference_threshold, learn=_learn(a))
     if a.reset_halt:
         agent.state.halted, agent.state.suspended = None, False
         agent.state.peak_equity = broker.equity()
@@ -238,6 +252,9 @@ def main():
         sp.add_argument("--max-drawdown", type=float, default=0.10)
         sp.add_argument("--max-trades-per-day", type=int, default=60)
         sp.add_argument("--no-retrain", action="store_true", help="no reentrenar automáticamente")
+        sp.add_argument("--no-learning", action="store_true", help="desactivar el aprendizaje de errores (crítico)")
+        sp.add_argument("--learn-entries", action="store_true",
+                        help="permitir entradas que el modelo base no operaría si la experiencia las respalda")
         sp.add_argument("--use-reference-threshold", action="store_true",
                         help="operar con el umbral de referencia aunque no haya ventaja validada (solo simulación)")
         if name == "replay":

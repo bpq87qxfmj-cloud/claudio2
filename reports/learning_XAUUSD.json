@@ -1,0 +1,114 @@
+{
+ "nota": "XAUUSD, coste 0.30, 1 unidad por operación, sin límites de riesgo. Reentrenamiento mensual. El periodo reservado ya se había consultado antes de diseñar el aprendizaje.",
+ "sin_aprendizaje": {
+  "diseno_2024_01_a_2026_04": {
+   "ops": 360,
+   "acierto": 0.531,
+   "bruto_op": 0.413,
+   "neto_op": 0.113,
+   "neto_total": 40.6,
+   "tstat": 0.54
+  },
+  "reservado_2026_05_a_2026_11": {
+   "ops": 1390,
+   "acierto": 0.499,
+   "bruto_op": 0.148,
+   "neto_op": -0.152,
+   "neto_total": -211.7,
+   "tstat": -1.42
+  },
+  "todo": {
+   "ops": 1750,
+   "acierto": 0.506,
+   "bruto_op": 0.202,
+   "neto_op": -0.098,
+   "neto_total": -171.1,
+   "tstat": -1.02
+  }
+ },
+ "veto": {
+  "diseno_2024_01_a_2026_04": {
+   "ops": 223,
+   "acierto": 0.547,
+   "bruto_op": 0.593,
+   "neto_op": 0.293,
+   "neto_total": 65.3,
+   "tstat": 0.96
+  },
+  "reservado_2026_05_a_2026_11": {
+   "ops": 552,
+   "acierto": 0.514,
+   "bruto_op": 0.259,
+   "neto_op": -0.041,
+   "neto_total": -22.5,
+   "tstat": -0.21
+  },
+  "todo": {
+   "ops": 775,
+   "acierto": 0.524,
+   "bruto_op": 0.355,
+   "neto_op": 0.055,
+   "neto_total": 42.8,
+   "tstat": 0.34
+  }
+ },
+ "veto_y_entradas_aprendidas": {
+  "diseno_2024_01_a_2026_04": {
+   "ops": 868,
+   "acierto": 0.518,
+   "bruto_op": 0.438,
+   "neto_op": 0.138,
+   "neto_total": 119.4,
+   "tstat": 0.86
+  },
+  "reservado_2026_05_a_2026_11": {
+   "ops": 774,
+   "acierto": 0.5,
+   "bruto_op": 0.175,
+   "neto_op": -0.125,
+   "neto_total": -96.6,
+   "tstat": -0.75
+  },
+  "todo": {
+   "ops": 1642,
+   "acierto": 0.51,
+   "bruto_op": 0.314,
+   "neto_op": 0.014,
+   "neto_total": 22.8,
+   "tstat": 0.12
+  }
+ },
+ "critico": {
+  "experiencias": 30354,
+  "aprobadas": {
+   "n": 10215,
+   "neto_medio": -0.002
+  },
+  "rechazadas": {
+   "n": 26641,
+   "neto_medio": -0.191
+  },
+  "lecciones": [
+   [
+    "cost_w",
+    0.22
+   ],
+   [
+    "vol_bps",
+    0.167
+   ],
+   [
+    "sess_bars",
+    0.122
+   ],
+   [
+    "vol_60_390",
+    0.096
+   ],
+   [
+    "ret_30",
+    0.093
+   ]
+  ]
+ }
+}

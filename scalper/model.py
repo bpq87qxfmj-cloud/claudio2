@@ -20,6 +20,9 @@ from .features import FEATURE_WARMUP, build_features
 from .labels import Outcomes, barrier_width, simulate
 
 
+CANDIDATE_Q = 0.05  # fracción de barras con |predicción| más alta que se consideran candidatas
+
+
 def prepare(df: pd.DataFrame, p: Params) -> tuple[pd.DataFrame, Outcomes]:
     return build_features(df), simulate(df, p)
 
@@ -90,6 +93,7 @@ def walk_forward(df: pd.DataFrame, cost: float, p: Params, start: str | None = N
         pred[v_lo:v_hi] = model.predict(X.iloc[v_lo:v_hi])
         pred[t_lo:t_hi] = model.predict(X.iloc[t_lo:t_hi])
         thr, vst = pick_threshold(idx, pred, out, v_lo, v_hi, cost, p)
+        cand = float(np.nanquantile(np.abs(pred[v_lo:v_hi]), 1 - CANDIDATE_Q))
         trades = backtest.run(idx, make_signal(pred, out.width, thr, cost, p), out, cost, t_lo, t_hi)
         all_trades.append(trades)
         pred_all[t_lo:t_hi] = pred[t_lo:t_hi]
@@ -97,7 +101,7 @@ def walk_forward(df: pd.DataFrame, cost: float, p: Params, start: str | None = N
         ok = np.isfinite(y) & np.isfinite(ph)
         ic = float(pd.Series(ph[ok]).corr(pd.Series(y[ok]), method="spearman")) if ok.sum() > 100 else np.nan
         st = backtest.stats(trades)
-        rows.append(dict(month=str(m), trees=model.best_iteration_, ic=ic, thr=thr, val_q=vst.get("quantile"),
+        rows.append(dict(month=str(m), trees=model.best_iteration_, ic=ic, thr=thr, cand=cand, val_q=vst.get("quantile"),
                          val_tstat=vst.get("tstat"), trades=st["trades"], net=st["net_total"],
                          gross=float(trades["gross"].sum()) if len(trades) else 0.0))
         if verbose:
@@ -121,6 +125,8 @@ def fit_final(market: str, df: pd.DataFrame, cost: float, p: Params) -> tuple[lg
         market=market, cost=cost, threshold=thr if np.isfinite(thr) else None,
         # umbral de referencia (top 2 %) por si la validación no encontró ventaja neta
         reference_threshold=float(np.nanquantile(np.abs(pred[v_lo:v_hi]), 0.98)),
+        # umbral de "candidatas": señales que el agente observa y de cuyo resultado aprende
+        candidate_threshold=float(np.nanquantile(np.abs(pred[v_lo:v_hi]), 1 - CANDIDATE_Q)),
         val_stats=vst, features=list(X.columns), trained_until=str(df.index[-1]),
         train_from=str(df.index[lo]), trees=int(model.best_iteration_),
         params={k: v for k, v in asdict(p).items() if k != "lgbm"},
@@ -161,6 +167,17 @@ class Predictor:
         X = build_features(df)[self.meta["features"]]
         pred = float(self.booster.predict(X.iloc[[-1]], num_iteration=self.meta["trees"])[0])
         return pred, float(barrier_width(df, self.params)[-1])
+
+    def last_full(self, df: pd.DataFrame) -> tuple[float, float, pd.Series]:
+        """Como `last`, pero devuelve también las variables de la última barra (contexto para aprender)."""
+        X = build_features(df)
+        row = X.iloc[[-1]]
+        pred = float(self.booster.predict(row[self.meta["features"]], num_iteration=self.meta["trees"])[0])
+        return pred, float(barrier_width(df, self.params)[-1]), row.iloc[0]
+
+    @property
+    def candidate_threshold(self) -> float:
+        return float(self.meta.get("candidate_threshold", self.meta["reference_threshold"]))
 
     def side(self, pred: float, width: float, cost: float, use_reference: bool = False) -> int:
         thr = self.threshold if self.threshold is not None else (self.meta["reference_threshold"] if use_reference else None)

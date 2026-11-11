@@ -72,6 +72,7 @@ la validación encontró ventaja neta y el sistema operó; el resto se queda fue
 | Modelo | `scalper/model.py` | LightGBM que estima el resultado esperado de un largo (negativo ⇒ corto). Umbral de entrada elegido en validación; si no hay ventaja neta, no opera |
 | Backtest | `scalper/backtest.py` | Una posición a la vez, coste de ida y vuelta en cada operación, sin operar a través de cierres de sesión |
 | Informe | `scalper/report.py` | Comparación de mercados, curvas y sensibilidad al coste |
+| Aprendizaje | `scalper/learning.py` | Memoria de señales, operaciones en la sombra y crítico que veta lo que se parece a errores pasados |
 | Agente | `scalper/agent.py`, `scalper/brokers.py`, `scalper/capital.py` | Bucle autónomo, gestión de riesgo, cuenta simulada y adaptadores de Capital.com y MetaTrader 5 |
 
 Salvaguardas contra el autoengaño: purga de etiquetas solapadas entre entrenamiento, validación y
@@ -92,7 +93,8 @@ inicial.
 3. Pide la predicción al modelo y, si supera el umbral validado, abre una operación con TP, SL
    y caducidad a los 10 minutos, dimensionada para arriesgar un 0,25 % del capital.
 4. Guarda su estado en `state/` (reanuda tras un reinicio) y un diario de operaciones en CSV.
-5. Se reentrena cada 7 días con datos nuevos. Si la validación no encuentra ventaja neta, se
+5. Aprende de sus errores: recuerda cómo acabó cada señal y veta las que se parecen a sus pérdidas.
+6. Se reentrena cada 7 días con datos nuevos. Si la validación no encuentra ventaja neta, se
    queda fuera hasta el siguiente reentrenamiento.
 
 | control | valor por defecto | efecto |
@@ -104,6 +106,7 @@ inicial.
 | Monitor de ventaja | t < −2 en las últimas 100 operaciones | se suspende hasta reentrenar |
 | Cierre de sesión | 11 min antes del cierre diario | no abre operaciones que cruzarían el cierre |
 | Datos caducados / spread alto | 3 min / spread por encima del coste indicado | no abre |
+| Crítico (aprendizaje) | veta si espera pérdida | descarta operaciones parecidas a errores pasados |
 | Parada manual | crear el archivo `state/STOP` | cierra la posición y termina |
 
 ```bash
@@ -114,12 +117,52 @@ python -m scalper agent  --market XAUUSD --broker capital       # órdenes en la
 python -m scalper agent  --market XAUUSD --broker mt5           # órdenes en MetaTrader 5 (demo)
 ```
 
-**Qué habría hecho** con 10 000 $ en los meses reservados (may–nov 2026, reentrenando cada mes):
+**Qué habría hecho sin aprendizaje** con 10 000 $ en los meses reservados (may–nov 2026,
+reentrenando cada mes; con aprendizaje, ver más abajo):
 892 operaciones, 49,8 % de acierto, capital 10 000 → 9 002 $ (**−10 %**), y se detuvo solo en
 septiembre al alcanzar la caída máxima. Antes de eso se suspendió dos veces por el monitor de
 ventaja y pasó 59 000 minutos fuera por no encontrar ventaja validada. Es coherente con el
 backtest: sin límites de riesgo el agente reproduce el walk-forward (1 390 operaciones y −211,7
 frente a 1 394 y −213,1; la diferencia son las entradas junto al cierre de sesión).
+
+### Aprender de los errores
+
+`scalper/learning.py` da memoria al agente. Funciona así:
+
+1. **Observa.** Cada señal fuerte del modelo (el 5 % de barras con mayor predicción), la opere o
+   no, se sigue como una operación "en la sombra" para saber cómo habría acabado con TP, SL y
+   coste. Así aprende también de los errores que no llegó a cometer.
+2. **Recuerda.** Guarda el contexto de cada señal (hora, volatilidad, tamaño de la barrera frente
+   al coste, movimiento reciente, fuerza de la predicción) junto a su resultado, en
+   `state/*_experience.csv`. La memoria sobrevive a los reinicios.
+3. **Aprende.** Cada jornada reajusta un "crítico": un segundo modelo que estima el resultado neto
+   esperado de una señal según su contexto. Empieza a opinar con 1 500 experiencias.
+4. **Corrige.** Antes de abrir una operación consulta al crítico y la **veta** si se parece a las
+   que antes perdieron. Con `--learn-entries` además abre señales que el modelo base no operaría,
+   pero solo mientras las últimas 300 aprobadas por el crítico hayan sido rentables en la sombra.
+
+Resultado en oro con coste 0,30 (una unidad por operación, sin límites de riesgo):
+
+| variante | ene-2024 a abr-2026 | may-2026 a nov-2026 (reservado) |
+|---|---|---|
+| Sin aprendizaje | 360 ops, +40,6 (t = 0,54) | 1 390 ops, **−211,7** (t = −1,42) |
+| Con veto (por defecto) | 223 ops, +65,3 (t = 0,96) | 552 ops, **−22,5** (t = −0,21) |
+| Veto + entradas aprendidas | 868 ops, +119,4 (t = 0,86) | 774 ops, −96,6 (t = −0,75) |
+
+- **Qué aprendió:** sobre todo a no operar cuando la barrera es pequeña frente al coste (poca
+  volatilidad) y al principio de la sesión. De 36 900 señales observadas, las que el crítico
+  rechazó perdieron de media 0,19 por operación; las que aprobó quedaron en 0,00.
+- **Qué significa:** aprender de los errores recorta la pérdida un 89 % en los meses reservados,
+  pero no la convierte en ganancia. Ningún resultado de la tabla es estadísticamente distinto de
+  cero. El crítico evita lo peor; no crea una ventaja que el modelo no tiene.
+- **Arranque en frío con 10 000 $ y los límites de riesgo** (may–nov 2026): con aprendizaje acaba
+  en 9 870 $ (−1,3 %); sin él, en 9 002 $ (−10 %) y detenido por caída máxima. En mayo, todavía sin
+  experiencia, pierde igual que antes; el veto empieza a actuar a finales de ese mes.
+- **Advertencia:** el periodo reservado ya se había consultado antes de añadir el aprendizaje. El
+  crítico se diseñó solo con datos hasta abr-2026, pero esta segunda mirada vale menos que la
+  primera como prueba.
+
+El aprendizaje viene activado; se desactiva con `--no-learning`.
 
 ### Capital.com
 
