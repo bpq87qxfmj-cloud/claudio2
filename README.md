@@ -150,7 +150,7 @@ Resultado en oro con coste 0,30 (una unidad por operación, sin límites de ries
 | Veto + entradas aprendidas | 868 ops, +119,4 (t = 0,86) | 774 ops, −96,6 (t = −0,75) |
 
 - **Qué aprendió:** sobre todo a no operar cuando la barrera es pequeña frente al coste (poca
-  volatilidad) y al principio de la sesión. De 36 900 señales observadas, las que el crítico
+  volatilidad) y en las primeras seis horas tras la reapertura diaria (sesión asiática). De 36 900 señales observadas, las que el crítico
   rechazó perdieron de media 0,19 por operación; las que aprobó quedaron en 0,00.
 - **Qué significa:** aprender de los errores recorta la pérdida un 89 % en los meses reservados,
   pero no la convierte en ganancia. Ningún resultado de la tabla es estadísticamente distinto de
