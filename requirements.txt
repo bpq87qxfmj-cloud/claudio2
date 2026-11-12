@@ -1,0 +1,5 @@
+numpy
+pandas>=2.2
+pyarrow
+scikit-learn>=1.4
+scipy
